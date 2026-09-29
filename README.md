@@ -84,6 +84,6 @@ Los recordatorios y la caducidad necesitan el **cron** de FacturaScripts.
 
 ## Licencia
 
-Licencia propietaria: 1 instalación por licencia y 12 meses de actualizaciones. Consulta el archivo `LICENSE.txt`.
+Gratuito, con licencia propietaria: se puede usar sin coste en cualquier número de instalaciones, pero no redistribuir ni vender. Consulta el archivo `LICENSE.txt`.
 
 Autor: Antonio Jesús González Domingo · antonio.gonzalez.domingo@proton.me

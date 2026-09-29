@@ -51,7 +51,8 @@ Y para trabajar menos:
 
 ## Datos de la ficha
 
-- Precio sugerido: 15 € (1 licencia + 12 meses de actualizaciones).
+- Precio: gratis. Licencia propietaria gratuita (ver `LICENSE.txt`): uso libre, sin redistribución ni venta.
+- Si el formulario de La Forja solo ofrece licencias abiertas, no elegir ninguna sin revisarlo antes.
 - Compatible con FacturaScripts 2026.1 o superior, PHP 8.1 o superior.
 - Requiere tener el email configurado en FacturaScripts (invitaciones, códigos y copias). Los recordatorios usan el cron.
 - Aviso legal: las firmas son firmas electrónicas simples con evidencias (reglamento eIDAS), no firmas cualificadas.
