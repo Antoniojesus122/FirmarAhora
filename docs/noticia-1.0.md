@@ -1,17 +1,16 @@
-# FirmarAhora 1.0: firma electrónica gratuita para FacturaScripts
+Ya está disponible la primera versión de FirmarAhora, un plugin gratuito para firmar presupuestos, pedidos, albaranes, facturas y contratos desde FacturaScripts, sin servicios externos ni cuotas.
 
-Publicada la primera versión de FirmarAhora, un plugin gratuito para firmar presupuestos, pedidos, albaranes, facturas y contratos desde FacturaScripts, sin servicios externos.
+## Qué puedes hacer
 
-Novedades de la versión 1.0:
+- **Firmar en el momento**: el cliente firma con el dedo en la tablet o con el ratón en el ordenador, desde la nueva pestaña «Firmas» de cada documento.
+- **Pedir la firma a distancia**: el cliente recibe un email con un enlace y firma desde el móvil, sin registrarse. También puedes mandarle el enlace por WhatsApp.
+- **Varios firmantes** en un mismo documento: cliente, técnico, testigo…
+- **Código por email** opcional, para confirmar que quien firma es el dueño del email.
+- **Copia firmada** en PDF con un certificado que recoge quién firmó, cuándo y desde dónde.
+- **Página de verificación**: cualquiera puede comprobar una firma con su código, e incluso subir el PDF para saber si alguien lo ha modificado.
+- **Contratos desde plantillas**, que se rellenan solos con los datos de cada cliente y se pueden enviar a muchos clientes a la vez.
+- **Recordatorios automáticos** a quien todavía no ha firmado.
 
-- Pestaña Firmas en los documentos de venta: firma en el momento, en la tablet o el ordenador, o a distancia con un enlace que el cliente abre en el móvil sin registrarse.
-- Varios firmantes por documento, cada uno con su enlace y su código de verificación.
-- Código por email opcional antes de firmar.
-- Copia sellada en PDF con certificado de evidencias: firmantes, NIF, fecha, IP, navegador y huella SHA-256 del documento.
-- Página pública de verificación, donde también se puede subir el PDF para comprobar que no se ha modificado.
-- Contratos desde plantillas con variables y envío masivo a una lista de emails.
-- Recordatorios automáticos y caducidad de los enlaces.
+Funciona con FacturaScripts 2026.1 o superior. En la documentación del plugin tienes paso a paso cómo empezar.
 
-Requiere FacturaScripts 2026.1 o superior y el email configurado. Toda la información de uso está en la documentación del plugin.
-
-Si encontráis algún fallo o echáis en falta alguna función, podéis escribirme desde el botón de contacto de la ficha.
+Si encuentras algún fallo o echas en falta alguna función, escríbeme desde el botón «Contacto» de la ficha.
