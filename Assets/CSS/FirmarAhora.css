@@ -1,0 +1,162 @@
+/* FirmarAhora */
+
+/* ---- panel de firma ---- */
+.fa-pad-lienzo {
+    position: relative;
+    background: #fff;
+    border: 2px dashed #c8d0dc;
+    border-radius: 10px;
+}
+
+.fa-pad-lienzo canvas {
+    display: block;
+    width: 100%;
+    height: 200px;
+}
+
+.fa-pad-lienzo::after {
+    content: '';
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: 42px;
+    border-bottom: 1px solid #e3e7ee;
+    pointer-events: none;
+}
+
+.fa-pad-modos .btn.active {
+    color: #fff;
+    background-color: var(--bs-primary, #0d6efd);
+    border-color: var(--bs-primary, #0d6efd);
+}
+
+/* ---- editor de contratos ---- */
+.fa-editor-barra {
+    margin-bottom: 4px;
+}
+
+.fa-editor-barra::after {
+    content: '';
+    display: block;
+    clear: both;
+}
+
+.fa-editor-zona {
+    min-height: 320px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #fff;
+    line-height: 1.55;
+}
+
+.fa-editor-zona:focus {
+    outline: none;
+    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .15);
+}
+
+.fa-editor-zona[contenteditable="false"] {
+    background: #f6f7f9;
+}
+
+.fa-editor-zona table td,
+.fa-editor-zona table th {
+    border: 1px solid #ccc;
+    padding: 4px;
+}
+
+.fa-editor-fuente {
+    min-height: 320px;
+    font-family: SFMono-Regular, Consolas, monospace;
+    font-size: .85rem;
+}
+
+/* ---- estados ---- */
+.fa-estado {
+    display: inline-block;
+    padding: .2em .6em;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    background: #eef1f5;
+    color: #475467;
+}
+
+.fa-estado-firmada { background: #dcfae6; color: #067647; }
+.fa-estado-vista { background: #e0f2fe; color: #026aa2; }
+.fa-estado-rechazada { background: #fee4e2; color: #b42318; }
+.fa-estado-caducada,
+.fa-estado-anulada { background: #f2f4f7; color: #667085; text-decoration: line-through; }
+
+.fa-firma-mini {
+    max-height: 48px;
+    max-width: 140px;
+    background: #fff;
+}
+
+/* ---- páginas públicas ---- */
+.fa-publica {
+    background: #f3f5f8;
+    min-height: 100vh;
+}
+
+.fa-publica-cabecera {
+    background: #16233b;
+    color: #fff;
+    padding: 1.5rem 0 5rem;
+}
+
+.fa-publica-cuerpo {
+    margin-top: -4rem;
+    padding-bottom: 3rem;
+}
+
+.fa-tarjeta {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(16, 24, 40, .08);
+}
+
+.fa-documento-html {
+    background: #fff;
+    padding: 2rem;
+    overflow-x: auto;
+    line-height: 1.6;
+}
+
+.fa-documento-html img {
+    max-width: 100%;
+    height: auto;
+}
+
+.fa-pdf {
+    width: 100%;
+    height: 72vh;
+    border: 0;
+    background: #e9edf2;
+}
+
+.fa-legal {
+    font-size: .85rem;
+    color: #475467;
+}
+
+.fa-hash {
+    font-family: SFMono-Regular, Consolas, monospace;
+    font-size: .78rem;
+    word-break: break-all;
+}
+
+.fa-codigo {
+    font-family: SFMono-Regular, Consolas, monospace;
+    letter-spacing: .08em;
+}
+
+@media (max-width: 767.98px) {
+    .fa-pdf-caja {
+        display: none;
+    }
+
+    .fa-documento-html {
+        padding: 1rem;
+    }
+}

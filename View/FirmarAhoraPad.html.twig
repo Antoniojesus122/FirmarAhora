@@ -1,0 +1,34 @@
+{#
+ # FirmarAhora - panel de firma, para incluir dentro de un formulario.
+ # Rellena los campos ocultos fa_firma (png) y fa_tipo al enviar (Assets/JS/FirmarAhoraPad.js).
+ #}
+<div class="fa-pad" data-fa-pad data-fa-vacio="{{ trans('fa-signature-empty') }}">
+	<div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+		<div class="btn-group btn-group-sm fa-pad-modos" role="group">
+			<button type="button" class="btn btn-outline-primary active" data-fa-modo="dibujada">
+				<i class="fa-solid fa-pen-nib fa-fw"></i> {{ trans('fa-type-dibujada') }}
+			</button>
+			<button type="button" class="btn btn-outline-primary" data-fa-modo="escrita">
+				<i class="fa-solid fa-keyboard fa-fw"></i> {{ trans('fa-type-escrita') }}
+			</button>
+			<button type="button" class="btn btn-outline-primary" data-fa-modo="imagen">
+				<i class="fa-solid fa-image fa-fw"></i> {{ trans('fa-type-imagen') }}
+			</button>
+		</div>
+		<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-fa-borrar>
+			<i class="fa-solid fa-eraser fa-fw"></i> {{ trans('clear') }}
+		</button>
+	</div>
+	<div class="mb-2 d-none" data-fa-solo="escrita">
+		<input type="text" class="form-control" data-fa-texto maxlength="60" placeholder="{{ trans('fa-type-your-name') }}" autocomplete="off">
+	</div>
+	<div class="mb-2 d-none" data-fa-solo="imagen">
+		<input type="file" class="form-control" data-fa-archivo accept="image/png,image/jpeg">
+	</div>
+	<div class="fa-pad-lienzo">
+		<canvas></canvas>
+	</div>
+	<p class="text-muted small mt-1 mb-0" data-fa-solo="dibujada">{{ trans('fa-draw-help') }}</p>
+	<input type="hidden" name="fa_firma" value="">
+	<input type="hidden" name="fa_tipo" value="dibujada">
+</div>

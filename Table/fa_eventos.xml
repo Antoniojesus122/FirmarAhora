@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * FirmarAhora: registro de auditoría de cada solicitud de firma.
+-->
+<table>
+    <column>
+        <name>detalle</name>
+        <type>text</type>
+    </column>
+    <column>
+        <name>fecha</name>
+        <type>timestamp</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>id</name>
+        <type>serial</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>idsolicitud</name>
+        <type>integer</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>ip</name>
+        <type>character varying(45)</type>
+    </column>
+    <column>
+        <name>nick</name>
+        <type>character varying(50)</type>
+    </column>
+    <column>
+        <name>tipo</name>
+        <type>character varying(20)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>user_agent</name>
+        <type>character varying(255)</type>
+    </column>
+    <constraint>
+        <name>fa_eventos_pkey</name>
+        <type>PRIMARY KEY (id)</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_eventos_solicitud</name>
+        <type>FOREIGN KEY (idsolicitud) REFERENCES fa_solicitudes (id) ON DELETE CASCADE ON UPDATE CASCADE</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_eventos_users</name>
+        <type>FOREIGN KEY (nick) REFERENCES users (nick) ON DELETE SET NULL ON UPDATE CASCADE</type>
+    </constraint>
+</table>

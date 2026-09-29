@@ -1,0 +1,14 @@
+{# FirmarAhora - ayuda con las variables de las plantillas. #}
+<div class="container-fluid">
+	<div class="card shadow-sm mb-3">
+		<div class="card-body">
+			<p>{{ trans('fa-variables-help') }}</p>
+			<div class="d-flex flex-wrap gap-2 mb-3">
+				{% for variable in fsc.variables() %}
+					<code class="border rounded px-2 py-1 bg-light">{{ variable }}</code>
+				{% endfor %}
+			</div>
+			<p class="text-muted small mb-0">{{ trans('fa-variables-signatures-help') }}</p>
+		</div>
+	</div>
+</div>

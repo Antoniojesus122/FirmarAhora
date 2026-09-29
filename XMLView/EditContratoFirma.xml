@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view>
+    <columns>
+        <group name="data" numcolumns="12">
+            <column name="id" display="none" order="100">
+                <widget type="text" fieldname="id"/>
+            </column>
+            <column name="title" numcolumns="5" order="110">
+                <widget type="text" fieldname="titulo" maxlength="150" required="true"/>
+            </column>
+            <column name="template" title="fa-template" numcolumns="4" order="120">
+                <widget type="select" fieldname="idplantilla" onclick="EditPlantillaFirma">
+                    <values source="fa_plantillas" fieldcode="id" fieldtitle="nombre"/>
+                </widget>
+            </column>
+            <column name="company" numcolumns="3" order="130">
+                <widget type="select" fieldname="idempresa" required="true">
+                    <values source="empresas" fieldcode="idempresa" fieldtitle="nombrecorto"/>
+                </widget>
+            </column>
+        </group>
+        <group name="parties" title="fa-parties" icon="fa-solid fa-user" numcolumns="12">
+            <column name="customer" numcolumns="3" order="100">
+                <widget type="autocomplete" fieldname="codcliente" onclick="EditCliente">
+                    <values source="clientes" fieldcode="codcliente" fieldtitle="nombre"/>
+                </widget>
+            </column>
+            <column name="supplier" numcolumns="3" order="110">
+                <widget type="autocomplete" fieldname="codproveedor" onclick="EditProveedor">
+                    <values source="proveedores" fieldcode="codproveedor" fieldtitle="nombre"/>
+                </widget>
+            </column>
+            <column name="contact" numcolumns="3" order="120">
+                <widget type="autocomplete" fieldname="idcontacto" onclick="EditContacto">
+                    <values source="contactos" fieldcode="idcontacto" fieldtitle="email"/>
+                </widget>
+            </column>
+            <column name="email" numcolumns="3" order="130" description="fa-contract-email-help">
+                <widget type="text" fieldname="email" icon="fa-solid fa-envelope" maxlength="100"/>
+            </column>
+            <column name="estimation" numcolumns="3" order="140">
+                <widget type="autocomplete" fieldname="idpresupuesto" onclick="EditPresupuestoCliente">
+                    <values source="presupuestoscli" fieldcode="idpresupuesto" fieldtitle="codigo"/>
+                </widget>
+            </column>
+            <column name="invoice" numcolumns="3" order="150">
+                <widget type="autocomplete" fieldname="idfactura" onclick="EditFacturaCliente">
+                    <values source="facturascli" fieldcode="idfactura" fieldtitle="codigo"/>
+                </widget>
+            </column>
+        </group>
+        <group name="text" title="fa-contract-text" icon="fa-solid fa-file-lines" numcolumns="12">
+            <column name="cuerpo" title="fa-content" numcolumns="12" order="100" description="fa-contract-text-help">
+                <widget type="fahtml" fieldname="cuerpo" rows="20"/>
+            </column>
+            <column name="observations" numcolumns="12" order="110">
+                <widget type="textarea" fieldname="observaciones" rows="2"/>
+            </column>
+        </group>
+    </columns>
+</view>

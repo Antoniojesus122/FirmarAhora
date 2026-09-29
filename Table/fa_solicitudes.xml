@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * FirmarAhora: una fila por firmante y documento.
+ * Guarda la invitación (enlace, OTP, caducidad) y, una vez firmada, las evidencias.
+-->
+<table>
+    <column>
+        <name>caduca</name>
+        <type>date</type>
+    </column>
+    <column>
+        <name>codigo</name>
+        <type>character varying(20)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>creado</name>
+        <type>timestamp</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>doc_code</name>
+        <type>character varying(30)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>doc_model</name>
+        <type>character varying(40)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>doc_titulo</name>
+        <type>character varying(150)</type>
+    </column>
+    <column>
+        <name>email</name>
+        <type>character varying(100)</type>
+    </column>
+    <column>
+        <name>enviado</name>
+        <type>timestamp</type>
+    </column>
+    <column>
+        <name>estado</name>
+        <type>character varying(12)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>firma_path</name>
+        <type>character varying(255)</type>
+    </column>
+    <column>
+        <name>firma_tipo</name>
+        <type>character varying(12)</type>
+    </column>
+    <column>
+        <name>firmado</name>
+        <type>timestamp</type>
+    </column>
+    <column>
+        <name>firmante_nif</name>
+        <type>character varying(20)</type>
+    </column>
+    <column>
+        <name>firmante_nombre</name>
+        <type>character varying(100)</type>
+    </column>
+    <column>
+        <name>hash_original</name>
+        <type>character varying(64)</type>
+    </column>
+    <column>
+        <name>hash_sellado</name>
+        <type>character varying(64)</type>
+    </column>
+    <column>
+        <name>id</name>
+        <type>serial</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>ip</name>
+        <type>character varying(45)</type>
+    </column>
+    <column>
+        <name>motivo_rechazo</name>
+        <type>text</type>
+    </column>
+    <column>
+        <name>nick</name>
+        <type>character varying(50)</type>
+    </column>
+    <column>
+        <name>nif</name>
+        <type>character varying(20)</type>
+    </column>
+    <column>
+        <name>nombre</name>
+        <type>character varying(100)</type>
+    </column>
+    <column>
+        <name>orden</name>
+        <type>integer</type>
+        <default>1</default>
+    </column>
+    <column>
+        <name>otp_expira</name>
+        <type>timestamp</type>
+    </column>
+    <column>
+        <name>otp_hash</name>
+        <type>character varying(255)</type>
+    </column>
+    <column>
+        <name>otp_intentos</name>
+        <type>integer</type>
+        <default>0</default>
+    </column>
+    <column>
+        <name>otp_verificado</name>
+        <type>boolean</type>
+        <default>false</default>
+    </column>
+    <column>
+        <name>presencial</name>
+        <type>boolean</type>
+        <default>false</default>
+    </column>
+    <column>
+        <name>recordatorios</name>
+        <type>integer</type>
+        <default>0</default>
+    </column>
+    <column>
+        <name>requiere_otp</name>
+        <type>boolean</type>
+        <default>false</default>
+    </column>
+    <column>
+        <name>rol</name>
+        <type>character varying(50)</type>
+    </column>
+    <column>
+        <name>sellado_path</name>
+        <type>character varying(255)</type>
+    </column>
+    <column>
+        <name>token</name>
+        <type>character varying(64)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>user_agent</name>
+        <type>character varying(255)</type>
+    </column>
+    <constraint>
+        <name>fa_solicitudes_pkey</name>
+        <type>PRIMARY KEY (id)</type>
+    </constraint>
+    <constraint>
+        <name>uniq_fa_solicitudes_codigo</name>
+        <type>UNIQUE (codigo)</type>
+    </constraint>
+    <constraint>
+        <name>uniq_fa_solicitudes_token</name>
+        <type>UNIQUE (token)</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_solicitudes_users</name>
+        <type>FOREIGN KEY (nick) REFERENCES users (nick) ON DELETE SET NULL ON UPDATE CASCADE</type>
+    </constraint>
+</table>

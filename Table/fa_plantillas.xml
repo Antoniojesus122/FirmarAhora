@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * FirmarAhora: plantillas de contratos y documentos propios.
+-->
+<table>
+    <column>
+        <name>asunto</name>
+        <type>character varying(150)</type>
+    </column>
+    <column>
+        <name>creado</name>
+        <type>timestamp</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>cuerpo</name>
+        <type>text</type>
+    </column>
+    <column>
+        <name>dias_validez</name>
+        <type>integer</type>
+    </column>
+    <column>
+        <name>id</name>
+        <type>serial</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>idfirmaempresa</name>
+        <type>integer</type>
+    </column>
+    <column>
+        <name>idlogo</name>
+        <type>integer</type>
+    </column>
+    <column>
+        <name>mensaje</name>
+        <type>text</type>
+    </column>
+    <column>
+        <name>nick</name>
+        <type>character varying(50)</type>
+    </column>
+    <column>
+        <name>nombre</name>
+        <type>character varying(100)</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>requiere_otp</name>
+        <type>boolean</type>
+        <default>false</default>
+    </column>
+    <constraint>
+        <name>fa_plantillas_pkey</name>
+        <type>PRIMARY KEY (id)</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_plantillas_logo</name>
+        <type>FOREIGN KEY (idlogo) REFERENCES attached_files (idfile) ON DELETE SET NULL ON UPDATE CASCADE</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_plantillas_firmaempresa</name>
+        <type>FOREIGN KEY (idfirmaempresa) REFERENCES attached_files (idfile) ON DELETE SET NULL ON UPDATE CASCADE</type>
+    </constraint>
+    <constraint>
+        <name>ca_fa_plantillas_users</name>
+        <type>FOREIGN KEY (nick) REFERENCES users (nick) ON DELETE SET NULL ON UPDATE CASCADE</type>
+    </constraint>
+</table>

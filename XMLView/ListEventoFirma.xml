@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view>
+    <columns>
+        <column name="date" order="100">
+            <widget type="datetime" fieldname="fecha"/>
+        </column>
+        <column name="fa-event" order="110">
+            <widget type="select" fieldname="tipo" translate="true">
+                <values title="fa-event-creada">creada</values>
+                <values title="fa-event-enviada">enviada</values>
+                <values title="fa-event-recordatorio">recordatorio</values>
+                <values title="fa-event-abierta">abierta</values>
+                <values title="fa-event-otp_enviado">otp_enviado</values>
+                <values title="fa-event-otp_ok">otp_ok</values>
+                <values title="fa-event-otp_error">otp_error</values>
+                <values title="fa-event-firmada">firmada</values>
+                <values title="fa-event-sellada">sellada</values>
+                <values title="fa-event-rechazada">rechazada</values>
+                <values title="fa-event-anulada">anulada</values>
+                <values title="fa-event-caducada">caducada</values>
+                <values title="fa-event-copiada">copiada</values>
+            </widget>
+        </column>
+        <column name="fa-detail" order="120">
+            <widget type="text" fieldname="detalle"/>
+        </column>
+        <column name="ip" order="130">
+            <widget type="text" fieldname="ip"/>
+        </column>
+        <column name="user" order="140">
+            <widget type="text" fieldname="nick"/>
+        </column>
+        <column name="fa-browser" order="150">
+            <widget type="text" fieldname="user_agent"/>
+        </column>
+    </columns>
+</view>

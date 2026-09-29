@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view>
+    <columns>
+        <column name="code" order="100">
+            <widget type="text" fieldname="id"/>
+        </column>
+        <column name="title" order="110">
+            <widget type="text" fieldname="titulo"/>
+        </column>
+        <column name="fa-template" order="120">
+            <widget type="select" fieldname="idplantilla">
+                <values source="fa_plantillas" fieldcode="id" fieldtitle="nombre"/>
+            </widget>
+        </column>
+        <column name="customer" order="130">
+            <widget type="autocomplete" fieldname="codcliente">
+                <values source="clientes" fieldcode="codcliente" fieldtitle="nombre"/>
+            </widget>
+        </column>
+        <column name="email" order="140">
+            <widget type="text" fieldname="email"/>
+        </column>
+        <column name="status" order="150">
+            <widget type="select" fieldname="estado" translate="true">
+                <values title="fa-contract-status-borrador">borrador</values>
+                <values title="fa-contract-status-enviado">enviado</values>
+                <values title="fa-contract-status-parcial">parcial</values>
+                <values title="fa-contract-status-firmado">firmado</values>
+                <values title="fa-contract-status-rechazado">rechazado</values>
+            </widget>
+        </column>
+        <column name="date" display="right" order="160">
+            <widget type="datetime" fieldname="creado"/>
+        </column>
+    </columns>
+    <rows>
+        <row type="status">
+            <option color="success" title="fa-contract-status-firmado" fieldname="estado">firmado</option>
+            <option color="info" title="fa-contract-status-parcial" fieldname="estado">parcial</option>
+            <option color="warning" title="fa-contract-status-enviado" fieldname="estado">enviado</option>
+            <option color="danger" title="fa-contract-status-rechazado" fieldname="estado">rechazado</option>
+        </row>
+    </rows>
+</view>

@@ -1,0 +1,41 @@
+{# FirmarAhora - estado y evidencias de una solicitud de firma, de sólo lectura. #}
+{% set sol = fsc.getCurrentView().model %}
+<div class="container-fluid">
+	<div class="card shadow-sm mb-3">
+		<div class="card-body">
+			<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+				<span class="fa-estado fa-estado-{{ sol.estado }}">{{ trans('fa-status-' ~ sol.estado) }}</span>
+				<span><span class="text-muted">{{ trans('document') }}:</span> <b>{{ sol.doc_titulo }}</b></span>
+				<span><span class="text-muted">{{ trans('fa-verification-code') }}:</span> <b class="fa-codigo">{{ sol.codigo }}</b></span>
+				{% if sol.requiere_otp %}<span class="badge bg-info">{{ trans('fa-otp') }}</span>{% endif %}
+				{% if sol.presencial %}<span class="badge bg-secondary">{{ trans('fa-method-in-person') }}</span>{% endif %}
+			</div>
+			{% if sol.estado == 'firmada' %}
+				<div class="row g-3">
+					<div class="col-md-3 text-center">
+						{% if sol.firma_path %}
+							<img src="{{ asset(myFilesUrl(sol.firma_path, true)) }}" class="img-fluid border rounded bg-white" style="max-height:120px;" alt="">
+						{% endif %}
+					</div>
+					<div class="col-md-9">
+						<table class="table table-sm mb-0">
+							<tr><th style="width:220px;">{{ trans('fa-signed-by') }}</th><td>{{ sol.firmante_nombre }} · {{ sol.firmante_nif }}</td></tr>
+							<tr><th>{{ trans('fa-signed-at') }}</th><td>{{ sol.firmado }}</td></tr>
+							<tr><th>{{ trans('fa-signature-type') }}</th><td>{{ trans('fa-kind-' ~ sol.firma_tipo) }}</td></tr>
+							<tr><th>{{ trans('fa-otp-verified') }}</th><td>{{ sol.otp_verificado ? trans('yes') : trans('no') }}</td></tr>
+							<tr><th>IP</th><td>{{ sol.ip }}</td></tr>
+							<tr><th>{{ trans('fa-browser') }}</th><td class="small text-break">{{ sol.user_agent }}</td></tr>
+							<tr><th>{{ trans('fa-hash-viewed') }}</th><td class="fa-hash">{{ sol.hash_original }}</td></tr>
+							<tr><th>{{ trans('fa-hash-sealed') }}</th><td class="fa-hash">{{ sol.hash_sellado }}</td></tr>
+						</table>
+					</div>
+				</div>
+			{% elseif sol.estado == 'rechazada' %}
+				<p class="mb-0"><b>{{ trans('fa-reason') }}:</b> {{ sol.motivo_rechazo }}</p>
+			{% else %}
+				<p class="mb-1"><span class="text-muted">{{ trans('fa-signing-link') }}:</span> <span class="small text-break">{{ sol.urlFirma() }}</span></p>
+				<p class="mb-0 text-muted small">{{ trans('fa-reminders') }}: {{ sol.recordatorios }}{% if sol.enviado %} · {{ sol.enviado }}{% endif %}</p>
+			{% endif %}
+		</div>
+	</div>
+</div>

@@ -1,0 +1,211 @@
+{#
+ # FirmarAhora - pestaña "Firmas" de un documento (Lib/FirmarAhora/PanelFirmas).
+ #}
+{% set fa = fsc.getCurrentView().settings.fa %}
+{% set puedeEditar = fsc.permissions.allowUpdate %}
+
+<div class="container-fluid">
+	{# firmantes #}
+	<div class="card shadow-sm mb-3">
+		<div class="card-header bg-white d-flex align-items-center">
+			<i class="fa-solid fa-users fa-fw me-1"></i>
+			<b>{{ trans('fa-signers') }}</b>
+			<span class="badge bg-secondary ms-2">{{ fa.solicitudes | length }}</span>
+		</div>
+		{% if fa.solicitudes is empty %}
+			<div class="card-body text-muted">{{ trans('fa-no-requests') }}</div>
+		{% else %}
+			<div class="table-responsive">
+				<table class="table table-hover align-middle mb-0">
+					<thead>
+					<tr>
+						<th>{{ trans('fa-role') }}</th>
+						<th>{{ trans('fa-signer') }}</th>
+						<th>{{ trans('status') }}</th>
+						<th>{{ trans('fa-signature') }}</th>
+						<th>{{ trans('fa-signing-link') }}</th>
+						<th class="text-end"></th>
+					</tr>
+					</thead>
+					<tbody>
+					{% for sol in fa.solicitudes %}
+						<tr>
+							<td><b>{{ sol.rol }}</b><br><span class="text-muted small fa-codigo">{{ sol.codigo }}</span></td>
+							<td>
+								{{ sol.estado == 'firmada' ? sol.firmante_nombre : sol.nombre }}
+								{% if sol.estado == 'firmada' and sol.firmante_nif %}<span class="text-muted">· {{ sol.firmante_nif }}</span>{% endif %}
+								{% if sol.email %}<br><span class="text-muted small">{{ sol.email }}</span>{% endif %}
+							</td>
+							<td>
+								<span class="fa-estado fa-estado-{{ sol.estado }}">{{ trans('fa-status-' ~ sol.estado) }}</span>
+								<div class="text-muted small mt-1">
+									{% if sol.estado == 'firmada' %}
+										{{ sol.firmado }}{% if sol.presencial %} · {{ trans('fa-method-in-person') }}{% endif %}
+									{% elseif sol.estado == 'rechazada' %}
+										{{ sol.motivo_rechazo }}
+									{% elseif sol.caduca %}
+										{{ trans('fa-expires') }}: {{ sol.caduca }}
+									{% endif %}
+								</div>
+							</td>
+							<td>
+								{% if sol.estado == 'firmada' and sol.firma_path %}
+									<img src="{{ asset(myFilesUrl(sol.firma_path, true)) }}" class="fa-firma-mini border rounded" alt="">
+								{% endif %}
+							</td>
+							<td style="min-width: 220px;">
+								{% if sol.estaAbierta() %}
+									<div class="input-group input-group-sm">
+										<input type="text" class="form-control" value="{{ sol.urlFirma() }}" readonly id="fa-enlace-{{ sol.id }}">
+										<button type="button" class="btn btn-outline-primary" title="{{ trans('fa-copy-link') }}"
+												onclick="faCopiar('fa-enlace-{{ sol.id }}')">
+											<i class="fa-solid fa-copy"></i>
+										</button>
+									</div>
+								{% elseif sol.estado == 'firmada' %}
+									<a href="{{ sol.urlVerificacion() }}" target="_blank" class="small">
+										<i class="fa-solid fa-shield-halved fa-fw"></i>{{ trans('fa-verify') }}
+									</a>
+								{% endif %}
+							</td>
+							<td class="text-end text-nowrap">
+								<a href="{{ sol.url() }}" class="btn btn-sm btn-outline-secondary" title="{{ trans('fa-audit-trail') }}">
+									<i class="fa-solid fa-list-check"></i>
+								</a>
+								{% if puedeEditar and sol.estaAbierta() %}
+									{% if sol.email %}
+										{{ _self.accion(fa.url, 'fa-reenviar', sol.id, 'fa-solid fa-paper-plane', 'btn-outline-primary', trans('fa-resend')) }}
+									{% endif %}
+									{{ _self.accion(fa.url, 'fa-anular', sol.id, 'fa-solid fa-ban', 'btn-outline-warning', trans('fa-cancel-request')) }}
+								{% endif %}
+								{% if fsc.permissions.allowDelete and sol.estado != 'firmada' %}
+									{{ _self.accion(fa.url, 'fa-borrar', sol.id, 'fa-solid fa-trash-alt', 'btn-outline-danger', trans('delete')) }}
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+	</div>
+
+	{% if puedeEditar %}
+		<div class="row g-3 mb-3">
+			{# pedir firma a distancia #}
+			<div class="col-lg-6">
+				<div class="card shadow-sm h-100">
+					<div class="card-header bg-white">
+						<i class="fa-solid fa-paper-plane fa-fw me-1"></i><b>{{ trans('fa-request-remote') }}</b>
+					</div>
+					<div class="card-body">
+						<form method="post" action="{{ fa.url }}" onsubmit="animateSpinner('add')">
+							{{ formToken() }}
+							<input type="hidden" name="action" value="fa-solicitar">
+							<input type="hidden" name="activetab" value="firmarahora">
+							<div class="row g-2">
+								<div class="col-md-4">
+									<label class="form-label mb-0 small">{{ trans('fa-role') }}</label>
+									<input type="text" name="fa_rol" class="form-control" maxlength="50" value="{{ trans('customer') }}">
+								</div>
+								<div class="col-md-8">
+									<label class="form-label mb-0 small">{{ trans('name') }}</label>
+									<input type="text" name="fa_nombre" class="form-control" maxlength="100" value="{{ fa.nombre }}">
+								</div>
+								<div class="col-md-8">
+									<label class="form-label mb-0 small">{{ trans('email') }}</label>
+									<input type="email" name="fa_email" class="form-control" maxlength="100" value="{{ fa.email }}">
+								</div>
+								<div class="col-md-4">
+									<label class="form-label mb-0 small">{{ trans('fa-valid-days') }}</label>
+									<input type="number" name="fa_dias" class="form-control" min="0" value="{{ fa.dias }}">
+								</div>
+								<div class="col-12">
+									<div class="form-check">
+										<input class="form-check-input" type="checkbox" name="fa_otp" value="1" id="fa_otp" {{ fa.otp ? 'checked' : '' }}>
+										<label class="form-check-label" for="fa_otp">{{ trans('fa-otp-label') }}</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="checkbox" name="fa_enviar" value="1" id="fa_enviar" checked>
+										<label class="form-check-label" for="fa_enviar">{{ trans('fa-send-invite-now') }}</label>
+									</div>
+								</div>
+								<div class="col-12">
+									<input type="text" name="fa_asunto" class="form-control form-control-sm mb-1" maxlength="150" placeholder="{{ trans('fa-subject-optional') }}">
+									<textarea name="fa_mensaje" class="form-control form-control-sm" rows="2" placeholder="{{ trans('fa-message-optional') }}"></textarea>
+								</div>
+								<div class="col-12 text-end">
+									<button type="submit" class="btn btn-primary">
+										<i class="fa-solid fa-paper-plane fa-fw"></i> {{ trans('fa-create-request') }}
+									</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			{# firmar aquí #}
+			<div class="col-lg-6">
+				<div class="card shadow-sm h-100">
+					<div class="card-header bg-white">
+						<i class="fa-solid fa-pen-nib fa-fw me-1"></i><b>{{ trans('fa-sign-here') }}</b>
+					</div>
+					<div class="card-body">
+						<form method="post" action="{{ fa.url }}" onsubmit="animateSpinner('add')">
+							{{ formToken() }}
+							<input type="hidden" name="action" value="fa-firmar">
+							<input type="hidden" name="activetab" value="firmarahora">
+							<div class="row g-2 mb-2">
+								<div class="col-md-3">
+									<input type="text" name="fa_rol" class="form-control" maxlength="50" value="{{ trans('customer') }}" title="{{ trans('fa-role') }}">
+								</div>
+								<div class="col-md-5">
+									<input type="text" name="fa_nombre" class="form-control" maxlength="100" value="{{ fa.nombre }}" placeholder="{{ trans('name') }}" required>
+								</div>
+								<div class="col-md-4">
+									<input type="text" name="fa_nif" class="form-control" maxlength="20" value="{{ fa.nif }}" placeholder="{{ trans('fa-id-number') }}">
+								</div>
+							</div>
+							{% include 'FirmarAhoraPad.html.twig' %}
+							<p class="fa-legal mt-2 mb-2">{{ fa.legal }}</p>
+							<div class="text-end">
+								<button type="submit" class="btn btn-success">
+									<i class="fa-solid fa-signature fa-fw"></i> {{ trans('fa-sign') }}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	{% endif %}
+</div>
+
+<script>
+    function faCopiar(id) {
+        var campo = document.getElementById(id);
+        var hecho = function () {
+            if (typeof setToast === 'function') {
+                setToast('{{ trans('fa-link-copied') }}', 'success');
+            }
+        };
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(campo.value).then(hecho);
+        } else {
+            campo.select();
+            document.execCommand('copy');
+            hecho();
+        }
+    }
+</script>
+
+{% macro accion(url, action, id, icono, clase, titulo) %}
+	<form method="post" action="{{ url }}" class="d-inline" onsubmit="return confirm('{{ titulo }}?')">
+		{{ formToken() }}
+		<input type="hidden" name="action" value="{{ action }}">
+		<input type="hidden" name="activetab" value="firmarahora">
+		<input type="hidden" name="fa_id" value="{{ id }}">
+		<button type="submit" class="btn btn-sm {{ clase }}" title="{{ titulo }}"><i class="{{ icono }}"></i></button>
+	</form>
+{% endmacro %}

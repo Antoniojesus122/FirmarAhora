@@ -1,0 +1,9 @@
+{# FirmarAhora - vista previa del contrato, tal y como lo verá el firmante. #}
+<div class="container-fluid">
+	<div class="card shadow-sm mb-3">
+		<div class="card-body fa-documento-html">
+			<h3 class="mb-3">{{ fsc.getCurrentView().model.titulo }}</h3>
+			{{ fsc.getCurrentView().model.renderHtml(false) | raw }}
+		</div>
+	</div>
+</div>

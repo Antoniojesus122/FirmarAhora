@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Ajustes de FirmarAhora: Administrador > Panel de control > pestaña FirmarAhora.
+ * Se guardan en el grupo de ajustes "firmarahora".
+-->
+<view>
+    <columns>
+        <group name="firmarahora" title="FirmarAhora" icon="fa-solid fa-file-signature" numcolumns="12">
+            <column name="name" display="none" order="0">
+                <widget type="text" fieldname="name" readonly="true" required="true"/>
+            </column>
+            <column name="fa-valid-days" numcolumns="3" order="100" description="fa-settings-valid-days-help">
+                <widget type="number" fieldname="dias_validez" decimal="0" min="0"/>
+            </column>
+            <column name="fa-reminder-days" numcolumns="3" order="110" description="fa-settings-reminder-days-help">
+                <widget type="number" fieldname="recordatorio_dias" decimal="0" min="0"/>
+            </column>
+            <column name="fa-reminders-max" numcolumns="3" order="120">
+                <widget type="number" fieldname="recordatorios_max" decimal="0" min="0"/>
+            </column>
+            <column name="fa-otp" numcolumns="3" order="130" description="fa-settings-otp-help">
+                <widget type="checkbox" fieldname="otp_defecto"/>
+            </column>
+            <column name="fa-copy-to-signer" numcolumns="4" order="140" description="fa-settings-copy-help">
+                <widget type="checkbox" fieldname="copia_firmante"/>
+            </column>
+            <column name="fa-notify-sender" numcolumns="4" order="150" description="fa-settings-notify-help">
+                <widget type="checkbox" fieldname="avisar_emisor"/>
+            </column>
+            <column name="fa-signatures-in-print" numcolumns="4" order="160" description="fa-settings-print-help">
+                <widget type="checkbox" fieldname="firmas_en_impresion"/>
+            </column>
+            <column name="fa-legal-text" numcolumns="12" order="170" description="fa-settings-legal-help">
+                <widget type="textarea" fieldname="texto_legal" rows="3"/>
+            </column>
+        </group>
+    </columns>
+</view>

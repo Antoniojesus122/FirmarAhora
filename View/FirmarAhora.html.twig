@@ -1,0 +1,195 @@
+{#
+ # FirmarAhora - página pública de firma (Controller/FirmarAhora).
+ #}
+{% extends "Master/MicroTemplate.html.twig" %}
+
+{% block body %}
+	{{ parent() }}
+	<div class="fa-publica">
+		<div class="fa-publica-cabecera">
+			<div class="container d-flex align-items-center gap-2">
+				<i class="fa-solid fa-file-signature fa-lg"></i>
+				<span class="fw-semibold">{{ fsc.empresa.nombre }}</span>
+			</div>
+		</div>
+		<div class="container fa-publica-cuerpo">
+			{% if fsc.error %}
+				<div class="card fa-tarjeta">
+					<div class="card-body text-center p-5">
+						<i class="fa-solid fa-link-slash fa-3x text-secondary mb-3"></i>
+						<h1 class="h5">{{ trans('fa-invalid-link') }}</h1>
+					</div>
+				</div>
+			{% else %}
+				{% set sol = fsc.solicitud %}
+				{{ _self.documento(fsc, sol) }}
+
+				{% if sol.estado == 'firmada' %}
+					{{ _self.firmada(fsc, sol) }}
+				{% elseif sol.estado == 'rechazada' %}
+					{{ _self.aviso('fa-solid fa-circle-xmark', 'danger', trans('fa-public-rejected')) }}
+				{% elseif sol.estado == 'anulada' %}
+					{{ _self.aviso('fa-solid fa-ban', 'secondary', trans('fa-public-cancelled')) }}
+				{% elseif not sol.estaAbierta() %}
+					{{ _self.aviso('fa-solid fa-hourglass-end', 'warning', trans('fa-public-expired')) }}
+				{% elseif fsc.necesitaCodigo() %}
+					{{ _self.codigo(fsc, sol) }}
+				{% else %}
+					{{ _self.formulario(fsc, sol) }}
+				{% endif %}
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}
+
+{% macro documento(fsc, sol) %}
+	<div class="card fa-tarjeta mb-4">
+		<div class="card-body d-flex flex-wrap align-items-center gap-2">
+			<div class="me-auto">
+				<div class="text-muted small">{{ trans('fa-document-to-sign') }}</div>
+				<h1 class="h5 mb-0">{{ sol.doc_titulo }}</h1>
+				<div class="small mt-1">
+					<span class="text-muted">{{ trans('fa-you-sign-as') }}:</span> <b>{{ sol.rol }}</b>
+					{% if sol.caduca and sol.estaAbierta() %}
+						<span class="text-muted ms-2"><i class="fa-regular fa-clock"></i> {{ trans('fa-expires') }} {{ sol.caduca }}</span>
+					{% endif %}
+				</div>
+			</div>
+			<a href="{{ fsc.urlPropia('pdf') }}" target="_blank" class="btn btn-outline-secondary">
+				<i class="fa-solid fa-file-pdf fa-fw"></i> {{ trans('fa-view-pdf') }}
+			</a>
+		</div>
+		{% if fsc.html %}
+			<div class="fa-documento-html border-top">{{ fsc.html | raw }}</div>
+		{% else %}
+			{# iframe y no object: Safari no incrusta bien pdf con object #}
+			<div class="fa-pdf-caja border-top">
+				<iframe class="fa-pdf" src="{{ fsc.urlPropia('pdf') }}" title="{{ sol.doc_titulo }}"></iframe>
+			</div>
+		{% endif %}
+		{% set otros = fsc.otrosFirmantes() %}
+		{% if otros is not empty %}
+			<div class="card-footer bg-white small">
+				<span class="text-muted">{{ trans('fa-other-signers') }}:</span>
+				{% for otro in otros %}
+					<span class="me-2">{{ otro.rol }} <span class="fa-estado fa-estado-{{ otro.estado }}">{{ trans('fa-status-' ~ otro.estado) }}</span></span>
+				{% endfor %}
+			</div>
+		{% endif %}
+	</div>
+{% endmacro %}
+
+{% macro aviso(icono, color, texto) %}
+	<div class="card fa-tarjeta">
+		<div class="card-body">
+			<div class="alert alert-{{ color }} d-flex align-items-center gap-2 mb-0">
+				<i class="{{ icono }} fa-fw"></i><span>{{ texto }}</span>
+			</div>
+		</div>
+	</div>
+{% endmacro %}
+
+{% macro codigo(fsc, sol) %}
+	<div class="card fa-tarjeta">
+		<div class="card-body">
+			<h2 class="h6"><i class="fa-solid fa-envelope-circle-check fa-fw"></i> {{ trans('fa-otp-title') }}</h2>
+			<p class="text-muted">{{ trans('fa-otp-intro', {'%email%': sol.emailOculto()}) }}</p>
+			<div class="row g-2 align-items-end">
+				<div class="col-md-5">
+					<form method="post" action="{{ fsc.urlPropia() }}" class="d-flex gap-2">
+						{{ formToken() }}
+						<input type="hidden" name="action" value="comprobar-codigo">
+						<input type="text" name="codigo" class="form-control form-control-lg fa-codigo text-center" inputmode="numeric"
+							   maxlength="6" placeholder="000000" autocomplete="one-time-code" required>
+						<button type="submit" class="btn btn-primary">{{ trans('fa-otp-check') }}</button>
+					</form>
+				</div>
+				<div class="col-md-7">
+					<form method="post" action="{{ fsc.urlPropia() }}">
+						{{ formToken() }}
+						<input type="hidden" name="action" value="enviar-codigo">
+						<button type="submit" class="btn btn-outline-secondary">
+							<i class="fa-solid fa-paper-plane fa-fw"></i> {{ trans('fa-otp-send') }}
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endmacro %}
+
+{% macro firmada(fsc, sol) %}
+	<div class="card fa-tarjeta">
+		<div class="card-body">
+			<div class="alert alert-success d-flex align-items-center gap-2">
+				<i class="fa-solid fa-circle-check fa-fw"></i><span>{{ trans('fa-public-signed') }}</span>
+			</div>
+			<div class="row g-3 align-items-center">
+				<div class="col-md-4 text-center">
+					<img src="{{ asset(myFilesUrl(sol.firma_path, true)) }}" class="img-fluid border rounded bg-white" style="max-height:140px;" alt="">
+				</div>
+				<div class="col-md-8">
+					<div><b>{{ sol.firmante_nombre }}</b> · {{ sol.firmante_nif }}</div>
+					<div class="text-muted small">{{ sol.firmado }}</div>
+					<div class="mt-2">{{ trans('fa-verification-code') }}: <b class="fa-codigo">{{ sol.codigo }}</b></div>
+					<div class="mt-3 d-flex flex-wrap gap-2">
+						{% if sol.sellado_path %}
+							<a href="{{ fsc.urlPropia('sellado') }}" class="btn btn-primary">
+								<i class="fa-solid fa-download fa-fw"></i> {{ trans('fa-download-sealed') }}
+							</a>
+						{% endif %}
+						<a href="{{ sol.urlVerificacion() }}" target="_blank" class="btn btn-outline-secondary">
+							<i class="fa-solid fa-shield-halved fa-fw"></i> {{ trans('fa-verify') }}
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endmacro %}
+
+{% macro formulario(fsc, sol) %}
+	<div class="card fa-tarjeta mb-3">
+		<div class="card-body">
+			<h2 class="h6"><i class="fa-solid fa-signature fa-fw"></i> {{ trans('fa-sign-document') }}</h2>
+			<form method="post" action="{{ fsc.urlPropia() }}" id="fa-form-firma">
+				{{ formToken() }}
+				<input type="hidden" name="action" value="firmar">
+				<div class="row g-3 mb-3">
+					<div class="col-md-7">
+						<label class="form-label" for="fa_nombre">{{ trans('fa-full-name') }}</label>
+						<input type="text" name="fa_nombre" id="fa_nombre" class="form-control" maxlength="100" value="{{ sol.nombre }}" required autocomplete="name">
+					</div>
+					<div class="col-md-5">
+						<label class="form-label" for="fa_nif">{{ trans('fa-id-number') }}</label>
+						<input type="text" name="fa_nif" id="fa_nif" class="form-control" maxlength="20" value="{{ sol.nif }}" required autocomplete="off">
+					</div>
+				</div>
+				{% include 'FirmarAhoraPad.html.twig' %}
+				<div class="form-check mt-3">
+					<input class="form-check-input" type="checkbox" name="fa_acepto" value="1" id="fa_acepto" required>
+					<label class="form-check-label fa-legal" for="fa_acepto">{{ fsc.textoLegal() }}</label>
+				</div>
+				<div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
+					<button type="button" class="btn btn-link text-danger px-0" data-bs-toggle="collapse" data-bs-target="#fa-rechazo">
+						{{ trans('fa-reject') }}
+					</button>
+					<button type="submit" class="btn btn-success btn-lg">
+						<i class="fa-solid fa-signature fa-fw"></i> {{ trans('fa-sign') }}
+					</button>
+				</div>
+			</form>
+			<div class="collapse mt-3" id="fa-rechazo">
+				<form method="post" action="{{ fsc.urlPropia() }}" class="border rounded p-3 bg-light">
+					{{ formToken() }}
+					<input type="hidden" name="action" value="rechazar">
+					<label class="form-label" for="fa_motivo">{{ trans('fa-reject-reason') }}</label>
+					<textarea name="motivo" id="fa_motivo" class="form-control mb-2" rows="2" maxlength="1000" required></textarea>
+					<button type="submit" class="btn btn-outline-danger" onclick="return confirm('{{ trans('fa-reject-confirm') }}')">
+						{{ trans('fa-reject') }}
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+{% endmacro %}

@@ -1,0 +1,16 @@
+FirmarAhora - plugin para FacturaScripts
+Copyright (C) 2026 Antonio Jesús González Domingo <antonio.gonzalez.domingo@proton.me>
+
+LICENCIA DE USO
+
+1. Este software es propietario. El titular conserva todos los derechos de autor.
+2. Cada licencia permite instalar y usar el plugin en 1 instalación de FacturaScripts.
+3. Se permite modificar el código para adaptarlo a la propia instalación. No se permite
+   copiarlo, redistribuirlo, sublicenciarlo, venderlo ni publicarlo, total o parcialmente.
+4. La licencia incluye 12 meses de actualizaciones. Pasado ese plazo se conserva el
+   derecho de uso de la última versión recibida.
+5. El software se entrega "tal cual", sin garantías. El titular no responde de los daños
+   derivados de su uso. El plugin genera firmas electrónicas simples con evidencias, no
+   firmas cualificadas; su validez legal depende del uso y de la normativa aplicable.
+
+Contacto: antonio.gonzalez.domingo@proton.me

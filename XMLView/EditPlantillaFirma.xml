@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view>
+    <columns>
+        <group name="data" numcolumns="12">
+            <column name="id" display="none" order="100">
+                <widget type="text" fieldname="id"/>
+            </column>
+            <column name="name" numcolumns="4" order="110">
+                <widget type="text" fieldname="nombre" maxlength="100" required="true"/>
+            </column>
+            <column name="logo" numcolumns="2" order="120" description="fa-logo-help">
+                <widget type="select" fieldname="idlogo"/>
+            </column>
+            <column name="fa-company-signature" numcolumns="2" order="130" description="fa-company-signature-help">
+                <widget type="select" fieldname="idfirmaempresa"/>
+            </column>
+            <column name="fa-valid-days" numcolumns="2" order="140" description="fa-valid-days-help">
+                <widget type="number" fieldname="dias_validez" decimal="0" min="0"/>
+            </column>
+            <column name="fa-otp" display="center" numcolumns="2" order="150" description="fa-otp-help">
+                <widget type="checkbox" fieldname="requiere_otp"/>
+            </column>
+        </group>
+        <group name="email" title="fa-invitation-email" icon="fa-solid fa-envelope" numcolumns="12">
+            <column name="subject" numcolumns="12" order="100">
+                <widget type="text" fieldname="asunto" maxlength="150"/>
+            </column>
+            <column name="message" numcolumns="12" order="110" description="fa-message-help">
+                <widget type="textarea" fieldname="mensaje" rows="3"/>
+            </column>
+        </group>
+        <group name="text" title="fa-contract-text" icon="fa-solid fa-file-lines" numcolumns="12">
+            <column name="cuerpo" title="fa-content" numcolumns="12" order="100" description="fa-template-text-help">
+                <widget type="fahtml" fieldname="cuerpo" rows="24"/>
+            </column>
+        </group>
+    </columns>
+    <modals>
+        <group name="fa-envio-masivo" title="fa-bulk-send" icon="fa-solid fa-paper-plane">
+            <column name="fa-emails" numcolumns="12" description="fa-emails-help">
+                <widget type="textarea" fieldname="fa_emails" rows="4" required="true"/>
+            </column>
+            <column name="fa-create-contacts" numcolumns="6">
+                <widget type="checkbox" fieldname="fa_crear_contactos"/>
+            </column>
+            <column name="fa-otp" numcolumns="6">
+                <widget type="checkbox" fieldname="fa_otp"/>
+            </column>
+            <column name="subject" numcolumns="12" description="fa-empty-uses-template">
+                <widget type="text" fieldname="fa_asunto"/>
+            </column>
+            <column name="message" numcolumns="12" description="fa-empty-uses-template">
+                <widget type="textarea" fieldname="fa_mensaje" rows="3"/>
+            </column>
+        </group>
+    </modals>
+</view>
