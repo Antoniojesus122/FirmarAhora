@@ -30,6 +30,19 @@
             <column name="fa-signatures-in-print" numcolumns="4" order="160" description="fa-settings-print-help">
                 <widget type="checkbox" fieldname="firmas_en_impresion"/>
             </column>
+            <column name="fa-budget-signed" numcolumns="4" order="162" description="fa-budget-signed-help">
+                <widget type="select" fieldname="presupuesto_firmado" translate="true">
+                    <values title="fa-budget-keep"></values>
+                    <values title="fa-budget-order">pedido</values>
+                    <values title="fa-budget-invoice">factura</values>
+                </widget>
+            </column>
+            <column name="fa-ask-location" numcolumns="4" order="164" description="fa-ask-location-help">
+                <widget type="checkbox" fieldname="pedir_ubicacion"/>
+            </column>
+            <column name="fa-browser-language" numcolumns="4" order="166" description="fa-browser-language-help">
+                <widget type="checkbox" fieldname="idioma_navegador"/>
+            </column>
             <column name="fa-legal-text" numcolumns="12" order="170" description="fa-settings-legal-help">
                 <widget type="textarea" fieldname="texto_legal" rows="3"/>
             </column>

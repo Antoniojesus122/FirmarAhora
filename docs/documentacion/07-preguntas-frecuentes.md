@@ -24,6 +24,10 @@ No. Una firma hecha no se puede borrar, porque es la prueba de lo que se firmó.
 
 Comprueba que en los ajustes del plugin está activada la opción «Firmas en los PDF». Si usas otro plugin que cambia el diseño de los PDF, puede que ese plugin no muestre las firmas. La copia firmada sí las lleva siempre.
 
+## No se guarda la ubicación del firmante
+
+Los navegadores solo permiten pedir la ubicación en páginas seguras, con https. Si tu FacturaScripts no usa https, el certificado indicará que la ubicación no estaba disponible. También puede ser que el firmante haya preferido no compartirla.
+
 ## ¿Cuánto tiempo tiene el cliente para firmar?
 
 Los días que pongas al pedir la firma. Por defecto se usan los de los ajustes. Cuando se acaba el plazo, la solicitud pasa a «Caducada» y habrá que enviar una nueva.

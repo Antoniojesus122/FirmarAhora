@@ -12,6 +12,7 @@ enlace que el cliente abre en cualquier dispositivo sin registrarse.
 - **Tres formas de firmar**: dibujando con el dedo, el ratón o un lápiz; escribiendo el nombre (en letra
   manuscrita); o subiendo una imagen de la firma.
 - **Invitación por email** con un botón para firmar, **recordatorios automáticos** y **caducidad** del enlace.
+- **Enviar por WhatsApp**: un botón abre WhatsApp con el mensaje y el enlace de firma ya escritos.
 - **Código por email (OTP)** opcional: antes de firmar, el firmante demuestra que tiene acceso al buzón.
 - **Rechazar con motivo**: el firmante puede negarse a firmar, y quien envió la solicitud recibe el aviso.
 - **Copia sellada**: al firmar se guarda el PDF definitivo con una página de **certificado de evidencias**
@@ -26,6 +27,10 @@ enlace que el cliente abre en cualquier dispositivo sin registrarse.
 - **Registro de auditoría** de cada solicitud: creada, enviada, abierta, código enviado o verificado,
   firmada, sellada, rechazada, anulada, caducada.
 - Al **convertir** un documento (de presupuesto a pedido, albarán o factura) el nuevo recibe una copia de las firmas.
+- **Presupuesto aceptado al firmar** (opcional): cuando firman todos, el presupuesto pasa solo a pedido o a factura.
+- **Ubicación del firmante** (opcional): con su permiso, se añade al certificado de evidencias.
+- **Idioma del firmante**: las páginas de firma y verificación se muestran en español o en inglés según su navegador.
+  Los PDF firmados se generan siempre en el idioma de la empresa.
 
 ## Uso
 
@@ -62,7 +67,8 @@ enlace que el cliente abre en cualquier dispositivo sin registrarse.
 
 *Administrador > Panel de control > FirmarAhora*: días de validez del enlace, recordatorios (cada cuántos días
 y cuántos como máximo), código por email por defecto, copia sellada para el firmante, aviso al emisor, firmas en
-los PDF y texto legal que acepta el firmante.
+los PDF, texto legal que acepta el firmante, qué hacer con un presupuesto firmado, pedir la ubicación e idioma del
+firmante.
 
 Los recordatorios y la caducidad necesitan el **cron** de FacturaScripts.
 
@@ -75,6 +81,7 @@ Los recordatorios y la caducidad necesitan el **cron** de FacturaScripts.
 ## Notas técnicas
 
 - Tablas: `fa_solicitudes`, `fa_eventos`, `fa_plantillas`, `fa_contratos`.
+- La ubicación solo se puede pedir si la web se sirve por https (lo exigen los navegadores).
 - Archivos: imágenes de firma en `MyFiles/FirmarAhora/firmas/`, copias selladas en `MyFiles/FirmarAhora/sellados/`.
 - Enlace de firma: `/FirmarAhora?t=<token de 48 caracteres>`. Verificación: `/VerificarFirma?c=<código>`.
 - El PDF de los documentos lo amplía `Lib/Export/PDFExport`. Si otro plugin sustituye también el PDF de

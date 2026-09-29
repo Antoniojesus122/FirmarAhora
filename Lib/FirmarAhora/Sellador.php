@@ -34,32 +34,10 @@ class Sellador
      */
     public static function pdf($documento, bool $certificado): string
     {
-        Tools::folderCheckOrCreate(FS_FOLDER . '/MyFiles/Cache');
-
-        // cualquier aviso de PHP que se imprimiera acabaría dentro del pdf
-        ob_start();
-        try {
-            $export = new PDFExport();
-            $export->forzarFirmas();
-            $export->newDoc(self::titulo($documento), 0, '');
-
-            if ($documento instanceof ContratoFirma) {
-                $export->addContratoPage($documento);
-            } elseif ($documento instanceof BusinessDocument) {
-                $export->addBusinessDocPage($documento);
-            }
-
-            if ($certificado) {
-                $export->addCertificadoPage($documento);
-            }
-
-            return (string)$export->getDoc();
-        } catch (Throwable $exc) {
-            Tools::log()->error('fa-pdf-error', ['%error%' => $exc->getMessage()]);
-            return '';
-        } finally {
-            ob_end_clean();
-        }
+        // el documento firmado queda en el idioma de la empresa, aunque la página se vea en otro
+        return Idioma::con(null, function () use ($documento, $certificado) {
+            return self::generar($documento, $certificado);
+        });
     }
 
     /**
@@ -117,5 +95,41 @@ class Sellador
     {
         $nombre = preg_replace('/[^A-Za-z0-9_\-]/', '', str_replace(' ', '_', self::titulo($documento)));
         return (empty($nombre) ? 'documento' : $nombre) . $sufijo . '.pdf';
+    }
+
+    /**
+     * @param object $documento
+     * @param bool $certificado
+     *
+     * @return string Contenido del pdf.
+     */
+    private static function generar($documento, bool $certificado): string
+    {
+        Tools::folderCheckOrCreate(FS_FOLDER . '/MyFiles/Cache');
+
+        // cualquier aviso de PHP que se imprimiera acabaría dentro del pdf
+        ob_start();
+        try {
+            $export = new PDFExport();
+            $export->forzarFirmas();
+            $export->newDoc(self::titulo($documento), 0, '');
+
+            if ($documento instanceof ContratoFirma) {
+                $export->addContratoPage($documento);
+            } elseif ($documento instanceof BusinessDocument) {
+                $export->addBusinessDocPage($documento);
+            }
+
+            if ($certificado) {
+                $export->addCertificadoPage($documento);
+            }
+
+            return (string)$export->getDoc();
+        } catch (Throwable $exc) {
+            Tools::log()->error('fa-pdf-error', ['%error%' => $exc->getMessage()]);
+            return '';
+        } finally {
+            ob_end_clean();
+        }
     }
 }

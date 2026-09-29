@@ -66,6 +66,22 @@
         <type>character varying(100)</type>
     </column>
     <column>
+        <name>geo_estado</name>
+        <type>character varying(15)</type>
+    </column>
+    <column>
+        <name>geo_lat</name>
+        <type>double precision</type>
+    </column>
+    <column>
+        <name>geo_lon</name>
+        <type>double precision</type>
+    </column>
+    <column>
+        <name>geo_precision</name>
+        <type>integer</type>
+    </column>
+    <column>
         <name>hash_original</name>
         <type>character varying(64)</type>
     </column>

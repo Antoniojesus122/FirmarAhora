@@ -7,6 +7,7 @@
 namespace FacturaScripts\Plugins\FirmarAhora;
 
 use FacturaScripts\Core\Template\InitClass;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
 use FacturaScripts\Dinamic\Model\ContratoFirma;
 use FacturaScripts\Dinamic\Model\EventoFirma;
 use FacturaScripts\Dinamic\Model\PlantillaFirma;
@@ -45,5 +46,7 @@ class Init extends InitClass
         new ContratoFirma();
         new SolicitudFirma();
         new EventoFirma();
+
+        Ajustes::guardarPorDefecto();
     }
 }

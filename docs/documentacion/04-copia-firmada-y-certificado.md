@@ -9,6 +9,7 @@ Es un PDF con el documento tal y como se firmó, con las firmas al pie, y una ú
 - si firmó en persona o con el enlace;
 - si confirmó el código enviado a su email;
 - desde qué conexión y qué navegador firmó;
+- su ubicación, si se pidió y la compartió (desde la ficha de la solicitud puedes verla en el mapa);
 - la huella digital del documento que vio, que permite demostrar que no se ha cambiado.
 
 Al final aparece el historial completo: cuándo se envió, cuándo se abrió, cuándo se pidió el código y cuándo se firmó.

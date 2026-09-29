@@ -9,6 +9,7 @@ namespace FacturaScripts\Plugins\FirmarAhora\Controller;
 use FacturaScripts\Core\Html;
 use FacturaScripts\Core\Template\Controller;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Idioma;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
 
 /**
@@ -52,6 +53,7 @@ class VerificarFirma extends Controller
     public function run(): void
     {
         parent::run();
+        Idioma::delFirmante();
         $this->title = Tools::trans('fa-verify');
 
         $this->codigo = strtoupper(trim((string)$this->request()->inputOrQuery('c', '')));

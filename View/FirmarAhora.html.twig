@@ -170,6 +170,15 @@
 					<input class="form-check-input" type="checkbox" name="fa_acepto" value="1" id="fa_acepto" required>
 					<label class="form-check-label fa-legal" for="fa_acepto">{{ fsc.textoLegal() }}</label>
 				</div>
+				{% if fsc.pedirUbicacion() %}
+					<input type="hidden" name="fa_geo_estado" value="">
+					<input type="hidden" name="fa_geo_lat" value="">
+					<input type="hidden" name="fa_geo_lon" value="">
+					<input type="hidden" name="fa_geo_precision" value="">
+					<p class="text-muted small mt-2 mb-0" data-fa-ubicacion>
+						<i class="fa-solid fa-location-dot fa-fw"></i> {{ trans('fa-location-notice') }}
+					</p>
+				{% endif %}
 				<div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
 					<button type="button" class="btn btn-link text-danger px-0" data-bs-toggle="collapse" data-bs-target="#fa-rechazo">
 						{{ trans('fa-reject') }}

@@ -40,8 +40,15 @@ class PanelFirmas
         }
 
         $sujeto = self::sujeto($documento);
+        $solicitudes = SolicitudFirma::delDocumento($documento->modelClassName(), $codigo);
+        $whatsapp = [];
+        foreach ($solicitudes as $solicitud) {
+            $whatsapp[$solicitud->id] = self::enlaceWhatsapp($solicitud, $sujeto['telefono']);
+        }
+
         $view->settings['fa'] = [
-            'solicitudes' => SolicitudFirma::delDocumento($documento->modelClassName(), $codigo),
+            'solicitudes' => $solicitudes,
+            'whatsapp' => $whatsapp,
             'nombre' => $sujeto['nombre'],
             'email' => $sujeto['email'],
             'nif' => $sujeto['nif'],
@@ -52,6 +59,26 @@ class PanelFirmas
         ];
 
         return true;
+    }
+
+    /**
+     * Enlace de WhatsApp con el mensaje y el enlace de firma. Sin un teléfono internacional,
+     * WhatsApp deja elegir el contacto.
+     *
+     * @param SolicitudFirma $solicitud
+     * @param string $telefono
+     *
+     * @return string
+     */
+    public static function enlaceWhatsapp(SolicitudFirma $solicitud, string $telefono): string
+    {
+        $texto = Tools::trans('fa-whatsapp-text', [
+            '%name%' => (string)$solicitud->nombre,
+            '%doc%' => (string)$solicitud->doc_titulo,
+            '%url%' => $solicitud->urlFirma(),
+        ]);
+
+        return 'https://wa.me/' . self::telefonoWhatsapp($telefono) . '?text=' . rawurlencode($texto);
     }
 
     /**
@@ -150,6 +177,36 @@ class PanelFirmas
     }
 
     /**
+     * Teléfono en el formato internacional que pide WhatsApp: solo cifras y con prefijo de
+     * país. Los móviles españoles sin prefijo lo reciben si la empresa es de España.
+     *
+     * @param string $telefono
+     *
+     * @return string Vacío si no se puede saber el prefijo.
+     */
+    public static function telefonoWhatsapp(string $telefono): string
+    {
+        $telefono = trim($telefono);
+        $cifras = preg_replace('/\D/', '', $telefono);
+        if ($cifras === '') {
+            return '';
+        }
+
+        if (str_starts_with($telefono, '+')) {
+            return $cifras;
+        }
+        if (str_starts_with($cifras, '00')) {
+            return substr($cifras, 2);
+        }
+        if (strlen($cifras) === 9 && in_array($cifras[0], ['6', '7'], true)
+            && Tools::settings('default', 'codpais', 'ESP') === 'ESP') {
+            return '34' . $cifras;
+        }
+
+        return '';
+    }
+
+    /**
      * Firma en el momento, delante del usuario: crea la solicitud y la firma a la vez.
      *
      * @param object $documento
@@ -226,24 +283,36 @@ class PanelFirmas
      *
      * @param object $documento
      *
-     * @return array nombre, email y nif.
+     * @return array nombre, email, nif y telefono.
      */
     private static function sujeto($documento): array
     {
-        $datos = ['nombre' => '', 'email' => '', 'nif' => ''];
+        $datos = ['nombre' => '', 'email' => '', 'nif' => '', 'telefono' => ''];
         if (method_exists($documento, 'getContacto') && $documento->getContacto()->exists()) {
             $contacto = $documento->getContacto();
-            $datos = ['nombre' => trim($contacto->nombre . ' ' . $contacto->apellidos), 'email' => $contacto->email, 'nif' => $contacto->cifnif];
+            $datos = [
+                'nombre' => trim($contacto->nombre . ' ' . $contacto->apellidos),
+                'email' => $contacto->email,
+                'nif' => $contacto->cifnif,
+                'telefono' => $contacto->telefono1 ?: $contacto->telefono2,
+            ];
         }
         if (method_exists($documento, 'getCliente') && $documento->getCliente()->exists()) {
             $cliente = $documento->getCliente();
-            $datos = ['nombre' => $datos['nombre'] ?: $cliente->nombre, 'email' => $datos['email'] ?: $cliente->email, 'nif' => $datos['nif'] ?: $cliente->cifnif];
+            $datos = [
+                'nombre' => $datos['nombre'] ?: $cliente->nombre,
+                'email' => $datos['email'] ?: $cliente->email,
+                'nif' => $datos['nif'] ?: $cliente->cifnif,
+                'telefono' => $datos['telefono'] ?: ($cliente->telefono1 ?: $cliente->telefono2),
+            ];
         }
         if (isset($documento->nombrecliente)) {
             $datos['nombre'] = $datos['nombre'] ?: $documento->nombrecliente;
             $datos['nif'] = $datos['nif'] ?: $documento->cifnif;
-            if (empty($datos['email']) && method_exists($documento, 'getSubject')) {
-                $datos['email'] = (string)$documento->getSubject()->email;
+            if (method_exists($documento, 'getSubject')) {
+                $cliente = $documento->getSubject();
+                $datos['email'] = $datos['email'] ?: (string)$cliente->email;
+                $datos['telefono'] = $datos['telefono'] ?: (string)($cliente->telefono1 ?: $cliente->telefono2);
             }
         }
         if (false === empty($documento->email)) {

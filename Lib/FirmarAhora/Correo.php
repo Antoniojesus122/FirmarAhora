@@ -33,21 +33,10 @@ class Correo
             return false;
         }
 
-        $firmada = $solicitud->estado === SolicitudFirma::ESTADO_FIRMADA;
-        $clave = $firmada ? 'fa-mail-notice-signed' : 'fa-mail-notice-rejected';
-        $texto = Tools::trans($clave, [
-            '%signer%' => Tools::fixHtml($solicitud->firmante_nombre ?: $solicitud->nombre),
-            '%doc%' => Tools::fixHtml($solicitud->doc_titulo),
-            '%reason%' => Tools::fixHtml((string)$solicitud->motivo_rechazo),
-        ]);
-
-        $mail = new NewMail();
-        $mail->to($user->email)
-            ->subject(Tools::trans($firmada ? 'fa-mail-notice-signed-subject' : 'fa-mail-notice-rejected-subject', ['%doc%' => Tools::fixHtml($solicitud->doc_titulo)]))
-            ->body($texto)
-            ->addMainBlock(new ButtonBlock(Tools::trans('fa-view-request'), Tools::siteUrl() . '/' . $solicitud->url()));
-
-        return $mail->send();
+        // el aviso va en el idioma del usuario, no en el de la página que ve el firmante
+        return Idioma::con($user->langcode, function () use ($solicitud, $user) {
+            return self::enviarAviso($solicitud, $user);
+        });
     }
 
     /**
@@ -145,5 +134,30 @@ class Correo
         $solicitud->save();
         $solicitud->registrar($recordatorio ? 'recordatorio' : 'enviada', $solicitud->email, '', '', $user->nick ?? null);
         return true;
+    }
+
+    /**
+     * @param SolicitudFirma $solicitud
+     * @param User $user
+     *
+     * @return bool
+     */
+    private static function enviarAviso(SolicitudFirma $solicitud, User $user): bool
+    {
+        $firmada = $solicitud->estado === SolicitudFirma::ESTADO_FIRMADA;
+        $clave = $firmada ? 'fa-mail-notice-signed' : 'fa-mail-notice-rejected';
+        $texto = Tools::trans($clave, [
+            '%signer%' => Tools::fixHtml($solicitud->firmante_nombre ?: $solicitud->nombre),
+            '%doc%' => Tools::fixHtml($solicitud->doc_titulo),
+            '%reason%' => Tools::fixHtml((string)$solicitud->motivo_rechazo),
+        ]);
+
+        $mail = new NewMail();
+        $mail->to($user->email)
+            ->subject(Tools::trans($firmada ? 'fa-mail-notice-signed-subject' : 'fa-mail-notice-rejected-subject', ['%doc%' => Tools::fixHtml($solicitud->doc_titulo)]))
+            ->body($texto)
+            ->addMainBlock(new ButtonBlock(Tools::trans('fa-view-request'), Tools::siteUrl() . '/' . $solicitud->url()));
+
+        return $mail->send();
     }
 }

@@ -35,6 +35,9 @@ class SolicitudFirma extends ModelClass
     const ESTADO_PENDIENTE = 'pendiente';
     const ESTADO_RECHAZADA = 'rechazada';
     const ESTADO_VISTA = 'vista';
+    const GEO_CONCEDIDA = 'concedida';
+    const GEO_DENEGADA = 'denegada';
+    const GEO_NO_DISPONIBLE = 'no-disponible';
 
     /** @var string Letras del código de verificación: sin 0/O ni 1/I para no confundirlas. */
     const ALFABETO = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -80,6 +83,18 @@ class SolicitudFirma extends ModelClass
 
     /** @var string */
     public $firmante_nombre;
+
+    /** @var string Resultado de pedir la ubicación: concedida, denegada o no-disponible. Vacío: no se pidió. */
+    public $geo_estado;
+
+    /** @var float */
+    public $geo_lat;
+
+    /** @var float */
+    public $geo_lon;
+
+    /** @var int Precisión de la ubicación, en metros. */
+    public $geo_precision;
 
     /** @var string SHA-256 del pdf del documento tal y como lo vio el firmante. */
     public $hash_original;
@@ -365,6 +380,25 @@ class SolicitudFirma extends ModelClass
     }
 
     /**
+     * Ubicación del firmante, legible. Vacío si no se pidió.
+     *
+     * @return string
+     */
+    public function ubicacion(): string
+    {
+        if ($this->geo_estado === self::GEO_CONCEDIDA && null !== $this->geo_lat && null !== $this->geo_lon) {
+            return sprintf('%.5F, %.5F', $this->geo_lat, $this->geo_lon)
+                . ($this->geo_precision ? ' (±' . (int)$this->geo_precision . ' m)' : '');
+        }
+
+        if ($this->geo_estado === self::GEO_DENEGADA) {
+            return Tools::trans('fa-location-denied');
+        }
+
+        return $this->geo_estado === self::GEO_NO_DISPONIBLE ? Tools::trans('fa-location-unavailable') : '';
+    }
+
+    /**
      * Url pública para firmar.
      *
      * @return string
@@ -372,6 +406,22 @@ class SolicitudFirma extends ModelClass
     public function urlFirma(): string
     {
         return Tools::siteUrl() . '/FirmarAhora?t=' . $this->token;
+    }
+
+    /**
+     * Enlace a la ubicación del firmante en OpenStreetMap. Vacío si no la dio.
+     *
+     * @return string
+     */
+    public function urlMapa(): string
+    {
+        if ($this->geo_estado !== self::GEO_CONCEDIDA || null === $this->geo_lat || null === $this->geo_lon) {
+            return '';
+        }
+
+        $lat = sprintf('%.5F', $this->geo_lat);
+        $lon = sprintf('%.5F', $this->geo_lon);
+        return 'https://www.openstreetmap.org/?mlat=' . $lat . '&mlon=' . $lon . '#map=17/' . $lat . '/' . $lon;
     }
 
     /**

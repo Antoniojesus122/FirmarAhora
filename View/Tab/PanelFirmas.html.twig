@@ -61,6 +61,10 @@
 												onclick="faCopiar('fa-enlace-{{ sol.id }}')">
 											<i class="fa-solid fa-copy"></i>
 										</button>
+										<a href="{{ fa.whatsapp[sol.id] }}" target="_blank" rel="noopener" class="btn btn-outline-success"
+										   title="{{ trans('fa-send-whatsapp') }}">
+											<i class="fa-brands fa-whatsapp"></i>
+										</a>
 									</div>
 								{% elseif sol.estado == 'firmada' %}
 									<a href="{{ sol.urlVerificacion() }}" target="_blank" class="small">

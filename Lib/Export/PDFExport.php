@@ -87,6 +87,9 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
                     Tools::trans('fa-browser') => Tools::fixHtml((string)$solicitud->user_agent) ?: '-',
                     Tools::trans('fa-hash-viewed') => (string)$solicitud->hash_original,
                 ];
+                if ($solicitud->ubicacion() !== '') {
+                    $datos[Tools::trans('fa-location')] = $solicitud->ubicacion();
+                }
             } elseif ($solicitud->estado === SolicitudFirma::ESTADO_RECHAZADA) {
                 $datos[Tools::trans('fa-reason')] = Tools::fixHtml((string)$solicitud->motivo_rechazo);
             }

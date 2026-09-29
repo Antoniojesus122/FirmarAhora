@@ -20,7 +20,10 @@ Al activarlo aparece una pestaña nueva, **Firmas**, en tus presupuestos, pedido
 - si el cliente recibe por email su copia firmada;
 - si te llega un aviso cuando alguien firma o se niega a firmar;
 - si las firmas salen al imprimir los documentos;
-- el texto que el cliente acepta antes de firmar.
+- el texto que el cliente acepta antes de firmar;
+- qué hacer con un presupuesto cuando lo firman todos: dejarlo como está, pasarlo a pedido o pasarlo a factura;
+- si se pide la ubicación de quien firma a distancia;
+- si la página de firma se muestra en el idioma del navegador del cliente (español o inglés).
 
 Los valores que trae de fábrica sirven para empezar.
 

@@ -39,6 +39,10 @@ Y para trabajar menos:
 - **Recordatorios automáticos** a quien no ha firmado y **caducidad** de los enlaces.
 - El cliente puede **rechazar con motivo**, y te llega un aviso por email en cuanto firma o rechaza.
 - Al convertir un presupuesto en pedido, albarán o factura, **las firmas se copian** al nuevo documento.
+- **Envío por WhatsApp** con un botón: el mensaje y el enlace de firma ya escritos.
+- **Presupuestos que se aceptan solos**: cuando firman todos, pasan a pedido o a factura (opcional).
+- **Ubicación del firmante** en el certificado, con su permiso (opcional).
+- **Página de firma en el idioma del cliente** (español o inglés, según su navegador).
 
 ### Ejemplos de uso
 

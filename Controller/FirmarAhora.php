@@ -8,10 +8,12 @@ namespace FacturaScripts\Plugins\FirmarAhora\Controller;
 
 use FacturaScripts\Core\DataSrc\Empresas;
 use FacturaScripts\Core\Html;
+use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Template\Controller;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Firmador;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Idioma;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Otp;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\PanelFirmas;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Sellador;
@@ -78,6 +80,14 @@ class FirmarAhora extends Controller
         ));
     }
 
+    /**
+     * @return bool Se pide la ubicación al firmar.
+     */
+    public function pedirUbicacion(): bool
+    {
+        return Ajustes::pedirUbicacion();
+    }
+
     public function textoLegal(): string
     {
         return Ajustes::textoLegal();
@@ -97,6 +107,7 @@ class FirmarAhora extends Controller
     public function run(): void
     {
         parent::run();
+        Idioma::delFirmante();
 
         $this->solicitud = new SolicitudFirma();
         $token = (string)$this->request()->query('t', '');
@@ -158,8 +169,11 @@ class FirmarAhora extends Controller
 
         if ($this->solicitud->estaAbierta()) {
             PanelFirmas::recursos();
+            if ($this->pedirUbicacion()) {
+                AssetManager::addJs(Tools::config('route') . '/Dinamic/Assets/JS/FirmarAhoraUbicacion.js');
+            }
         } else {
-            \FacturaScripts\Core\Lib\AssetManager::addCss(Tools::config('route') . '/Dinamic/Assets/CSS/FirmarAhora.css');
+            AssetManager::addCss(Tools::config('route') . '/Dinamic/Assets/CSS/FirmarAhora.css');
         }
 
         $this->mostrar();
@@ -209,6 +223,16 @@ class FirmarAhora extends Controller
             return;
         }
 
+        $ubicacion = [];
+        if ($this->pedirUbicacion()) {
+            $ubicacion = [
+                'estado' => (string)$this->request()->input('fa_geo_estado', ''),
+                'lat' => $this->request()->input('fa_geo_lat', ''),
+                'lon' => $this->request()->input('fa_geo_lon', ''),
+                'precision' => $this->request()->input('fa_geo_precision', ''),
+            ];
+        }
+
         $ok = Firmador::firmar(
             $this->solicitud,
             (string)$this->request()->input('fa_firma', ''),
@@ -216,7 +240,9 @@ class FirmarAhora extends Controller
             $nombre,
             $nif,
             $ip,
-            $agente
+            $agente,
+            null,
+            $ubicacion
         );
         if ($ok) {
             Tools::log()->notice('fa-signed-ok');

@@ -9,7 +9,10 @@ Si el cliente no está contigo, puedes enviarle el documento para que lo firme d
 5. Deja marcado «Enviar ahora la invitación por email». Si quieres, cambia el asunto o añade un mensaje.
 6. Pulsa «Crear solicitud».
 
-El cliente recibe un email con un botón para ver y firmar el documento. También puedes pulsar «Copiar enlace» y mandárselo por WhatsApp o SMS.
+El cliente recibe un email con un botón para ver y firmar el documento. También puedes mandárselo por otro medio:
+
+- «Enviar por WhatsApp» (el botón verde) abre WhatsApp con el mensaje y el enlace ya escritos. Si el cliente tiene un móvil en su ficha, se abre directamente su chat.
+- «Copiar enlace» copia el enlace para pegarlo donde quieras, por ejemplo en un SMS.
 
 ## Lo que ve el cliente
 
@@ -19,6 +22,14 @@ El cliente recibe un email con un botón para ver y firmar el documento. Tambié
 4. Pulsa «Firmar». Desde la misma página puede descargar su copia firmada.
 
 Si no está de acuerdo, puede pulsar «No quiero firmar» y explicar el motivo. Te llegará un email con su respuesta.
+
+Si su navegador está en inglés, la página se le muestra en inglés. El documento firmado se guarda siempre en tu idioma.
+
+Si tienes activado pedir la ubicación, al pulsar «Firmar» su navegador le pregunta si quiere compartirla. Es opcional: si dice que no, firma igualmente.
+
+## Presupuestos que se aceptan solos
+
+Si en los ajustes eliges pasar a pedido (o a factura) los presupuestos firmados, en cuanto firma el último firmante el presupuesto cambia de estado y se crea el pedido o la factura, con las firmas incluidas. No tienes que hacer nada más.
 
 ## Seguir el estado
 

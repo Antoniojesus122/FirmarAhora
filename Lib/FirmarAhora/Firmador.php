@@ -7,6 +7,9 @@
 namespace FacturaScripts\Plugins\FirmarAhora\Lib\FirmarAhora;
 
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Core\Where;
+use FacturaScripts\Dinamic\Model\EstadoDocumento;
+use FacturaScripts\Dinamic\Model\PresupuestoCliente;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
 
 /**
@@ -146,11 +149,12 @@ class Firmador
      * @param string $ip
      * @param string $userAgent
      * @param ?string $nick Usuario del ERP, en las firmas presenciales.
+     * @param array $ubicacion estado, lat, lon y precision, si se pidió la ubicación.
      *
      * @return bool
      */
     public static function firmar(SolicitudFirma $solicitud, string $dataUrl, string $tipo, string $nombre, string $nif,
-                                  string $ip, string $userAgent, ?string $nick = null): bool
+                                  string $ip, string $userAgent, ?string $nick = null, array $ubicacion = []): bool
     {
         if (false === $solicitud->estaAbierta()) {
             Tools::log()->warning('fa-request-closed');
@@ -194,6 +198,7 @@ class Firmador
         $solicitud->ip = self::ip($ip);
         $solicitud->user_agent = $userAgent;
         $solicitud->estado = SolicitudFirma::ESTADO_FIRMADA;
+        self::ubicar($solicitud, $ubicacion);
         if (false === $solicitud->save()) {
             return false;
         }
@@ -211,6 +216,7 @@ class Firmador
             Correo::avisoEmisor($solicitud);
         }
 
+        self::avanzarPresupuesto($solicitud, $documento, $nick);
         return true;
     }
 
@@ -269,6 +275,72 @@ class Firmador
         }
 
         return true;
+    }
+
+    /**
+     * Cuando ya han firmado todos los firmantes de un presupuesto abierto, lo pasa al estado
+     * que genera el pedido o la factura, según los ajustes. El documento nuevo recibe una
+     * copia de las firmas al generarse.
+     *
+     * @param SolicitudFirma $solicitud
+     * @param object $documento
+     * @param ?string $nick
+     */
+    private static function avanzarPresupuesto(SolicitudFirma $solicitud, $documento, ?string $nick): void
+    {
+        $destino = ['pedido' => 'PedidoCliente', 'factura' => 'FacturaCliente'][Ajustes::presupuestoFirmado()] ?? '';
+        if ($destino === '' || false === $documento instanceof PresupuestoCliente || false === (bool)$documento->editable) {
+            return;
+        }
+
+        $firmadas = 0;
+        foreach (SolicitudFirma::delDocumento($solicitud->doc_model, $solicitud->doc_code) as $otra) {
+            if ($otra->estado === SolicitudFirma::ESTADO_FIRMADA) {
+                $firmadas++;
+            } elseif ($otra->estado !== SolicitudFirma::ESTADO_ANULADA) {
+                return;
+            }
+        }
+
+        $estado = new EstadoDocumento();
+        if ($firmadas === 0 || false === $estado->loadWhere([Where::eq('tipodoc', 'PresupuestoCliente'), Where::eq('generadoc', $destino)])) {
+            return;
+        }
+
+        $documento->idestado = $estado->idestado;
+        if ($documento->save()) {
+            $solicitud->registrar('presupuesto', $estado->nombre, '', '', $nick);
+        }
+    }
+
+    /**
+     * Guarda la ubicación que envía el navegador del firmante, si se pidió. Las coordenadas
+     * fuera de rango se tratan como no disponibles.
+     *
+     * @param SolicitudFirma $solicitud
+     * @param array $ubicacion
+     */
+    private static function ubicar(SolicitudFirma $solicitud, array $ubicacion): void
+    {
+        if (empty($ubicacion)) {
+            return;
+        }
+
+        $estado = (string)($ubicacion['estado'] ?? '');
+        $lat = filter_var($ubicacion['lat'] ?? null, FILTER_VALIDATE_FLOAT);
+        $lon = filter_var($ubicacion['lon'] ?? null, FILTER_VALIDATE_FLOAT);
+        $precision = filter_var($ubicacion['precision'] ?? null, FILTER_VALIDATE_FLOAT);
+
+        if ($estado === SolicitudFirma::GEO_CONCEDIDA && false !== $lat && false !== $lon
+            && abs($lat) <= 90 && abs($lon) <= 180) {
+            $solicitud->geo_estado = SolicitudFirma::GEO_CONCEDIDA;
+            $solicitud->geo_lat = round($lat, 6);
+            $solicitud->geo_lon = round($lon, 6);
+            $solicitud->geo_precision = false === $precision ? null : (int)min(max(0, round($precision)), 1000000);
+            return;
+        }
+
+        $solicitud->geo_estado = $estado === SolicitudFirma::GEO_DENEGADA ? SolicitudFirma::GEO_DENEGADA : SolicitudFirma::GEO_NO_DISPONIBLE;
     }
 
     /**
