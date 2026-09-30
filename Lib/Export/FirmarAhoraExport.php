@@ -6,15 +6,17 @@
 
 namespace FacturaScripts\Plugins\FirmarAhora\Lib\Export;
 
+use FacturaScripts\Core\Lib\Export\PDFExport;
 use FacturaScripts\Core\Tools;
-use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\HtmlPdf;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Sellador;
 use FacturaScripts\Dinamic\Model\ContratoFirma;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
 
 /**
- * Pdf de documentos con las firmas de FirmarAhora.
+ * Pdf de documentos con las firmas de FirmarAhora. Es la opción "PDF con firmas" del menú
+ * Imprimir y el formato de las copias selladas. No sustituye al PDFExport del núcleo, así
+ * que convive con otros plugins que cambien el pdf de los documentos.
  *
  * - En presupuestos, pedidos, albaranes y facturas, las firmas van al pie, abajo a la
  *   derecha: debajo de los totales si caben; en documentos de una página, en el hueco
@@ -22,7 +24,7 @@ use FacturaScripts\Dinamic\Model\SolicitudFirma;
  * - addContratoPage() imprime un contrato (su html) con las firmas donde esté {{firmas}}.
  * - addCertificadoPage() añade el certificado de evidencias de la copia sellada.
  */
-class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
+class FirmarAhoraExport extends PDFExport
 {
     /** @var int Ancho de cada bloque de firma, en puntos. */
     const FIRMA_ANCHO = 165;
@@ -32,9 +34,6 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
 
     /** @var int Separación alrededor de los bloques de firma. */
     const FIRMA_MARGEN = 12;
-
-    /** @var bool Imprimir las firmas aunque el ajuste lo desactive (copias selladas). */
-    private $forzar = false;
 
     /** @var ?float Altura del cursor antes de los totales, medida mientras se pinta el pie. */
     private $pieY = null;
@@ -85,8 +84,14 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
                     Tools::trans('fa-signature-type') => Tools::trans('fa-kind-' . $solicitud->firma_tipo),
                     'IP' => $solicitud->ip ?: '-',
                     Tools::trans('fa-browser') => Tools::fixHtml((string)$solicitud->user_agent) ?: '-',
-                    Tools::trans('fa-hash-viewed') => (string)$solicitud->hash_original,
+                    Tools::trans('fa-hash-viewed') => (string)$solicitud->hash_original ?: '-',
                 ];
+                if (false === empty($solicitud->ip_proxy)) {
+                    $datos[Tools::trans('fa-ip-proxy')] = Tools::fixHtml((string)$solicitud->ip_proxy);
+                }
+                if (false === empty($solicitud->origen)) {
+                    $datos[Tools::trans('fa-signed-document')] = Tools::fixHtml((string)$solicitud->origen);
+                }
                 if ($solicitud->ubicacion() !== '') {
                     $datos[Tools::trans('fa-location')] = $solicitud->ubicacion();
                 }
@@ -167,14 +172,6 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
     }
 
     /**
-     * Imprime las firmas aunque el ajuste de mostrarlas en los pdf esté desactivado.
-     */
-    public function forzarFirmas(): void
-    {
-        $this->forzar = true;
-    }
-
-    /**
      * Mientras se pinta el pie, apunta la altura del cursor en cada salto: la última es
      * la de justo antes de los totales.
      *
@@ -197,12 +194,12 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
      */
     protected function insertBusinessDocFooter($model)
     {
-        $firmadas = $this->forzar || Ajustes::firmasEnImpresion() ? array_values(array_filter(
+        $firmadas = array_values(array_filter(
             SolicitudFirma::delDocumento($model->modelClassName(), (string)$model->primaryColumnValue()),
             function ($solicitud) {
                 return $solicitud->estado === SolicitudFirma::ESTADO_FIRMADA;
             }
-        )) : [];
+        ));
 
         if (empty($firmadas)) {
             parent::insertBusinessDocFooter($model);
@@ -286,8 +283,14 @@ class PDFExport extends \FacturaScripts\Core\Lib\Export\PDFExport
         $this->pdf->addText($centro, $y, self::FONT_SIZE - 1, $this->recortar($nombre, self::FONT_SIZE - 1), 0, 'center');
 
         $y -= self::FONT_SIZE + 2;
-        $linea = $firmada ? $solicitud->firmado . ' · ' . $solicitud->codigo : Tools::trans('fa-pending-signature');
-        $this->pdf->addText($centro, $y, self::FONT_SIZE - 2, $linea, 0, 'center');
+        // una firma copiada al convertir indica el documento sobre el que se hizo
+        $linea = Tools::trans('fa-pending-signature');
+        if ($firmada) {
+            $linea = empty($solicitud->origen) ?
+                $solicitud->firmado . ' · ' . $solicitud->codigo :
+                Tools::trans('fa-signed-on-origin', ['%doc%' => Tools::fixHtml((string)$solicitud->origen)]);
+        }
+        $this->pdf->addText($centro, $y, self::FONT_SIZE - 2, $this->recortar($linea, self::FONT_SIZE - 2), 0, 'center');
     }
 
     /**

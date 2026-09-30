@@ -25,7 +25,7 @@ Cada presupuesto, pedido, albarán y factura de cliente tiene una pestaña **Fir
 
 Para dar más garantías:
 
-- **Código por email (OTP)** antes de firmar, opcional en cada solicitud.
+- **Código por email (OTP)**, opcional en cada solicitud: sin verificarlo no se puede ver el documento ni firmar.
 - **Copia sellada** en PDF con un **certificado de evidencias**: quién firmó, con qué NIF, cuándo, desde qué IP y
   navegador, si verificó el código, y la huella SHA-256 del documento que vio.
 - **Página pública de verificación**: con el código que aparece en el PDF, cualquiera comprueba quién firmó y
@@ -42,7 +42,7 @@ Y para trabajar menos:
 - **Envío por WhatsApp** con un botón: el mensaje y el enlace de firma ya escritos.
 - **Presupuestos que se aceptan solos**: cuando firman todos, pasan a pedido o a factura (opcional).
 - **Ubicación del firmante** en el certificado, con su permiso (opcional).
-- **Página de firma en el idioma del cliente** (español o inglés, según su navegador).
+- **Página de firma en el idioma del cliente**: español, inglés, catalán, valenciano, gallego, francés, italiano, portugués y alemán.
 
 ### Ejemplos de uso
 

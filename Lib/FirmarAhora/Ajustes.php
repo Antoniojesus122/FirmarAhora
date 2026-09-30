@@ -19,15 +19,18 @@ class Ajustes
     /** @var array Valores por defecto, que se guardan al instalar para que el formulario los muestre. */
     const DEFECTO = [
         'avisar_emisor' => true,
+        'cabecera_ip' => 'directa',
         'copia_firmante' => true,
+        'copiar_al_convertir' => true,
         'dias_validez' => 30,
         'firmas_en_impresion' => true,
         'idioma_navegador' => true,
         'otp_defecto' => false,
         'pedir_ubicacion' => false,
-        'presupuesto_firmado' => '',
+        'presupuesto_firmado' => 'no',
         'recordatorio_dias' => 3,
         'recordatorios_max' => 2,
+        'url_publica' => '',
     ];
 
     /** @return bool Avisar por email al usuario que envió la solicitud cuando se firma o rechaza. */
@@ -36,10 +39,23 @@ class Ajustes
         return (bool)self::valor('avisar_emisor');
     }
 
+    /** @return string Cabecera de proxy de confianza para la ip del firmante: x-forwarded-for, cf-connecting-ip o vacío. */
+    public static function cabeceraIp(): string
+    {
+        $valor = (string)self::valor('cabecera_ip');
+        return in_array($valor, ['x-forwarded-for', 'cf-connecting-ip'], true) ? $valor : '';
+    }
+
     /** @return bool Enviar al firmante la copia sellada en pdf al firmar. */
     public static function copiaFirmante(): bool
     {
         return (bool)self::valor('copia_firmante');
+    }
+
+    /** @return bool Copiar las firmas al documento que se genera al convertir otro. */
+    public static function copiarAlConvertir(): bool
+    {
+        return (bool)self::valor('copiar_al_convertir');
     }
 
     /** @return int Días que admite la firma un enlace. 0: sin caducidad. */
@@ -98,7 +114,9 @@ class Ajustes
     {
         $cambios = false;
         foreach (self::DEFECTO as $clave => $valor) {
-            if (null === Tools::settings(self::GRUPO, $clave)) {
+            // los desplegables no admiten el valor vacío que guardaban las versiones anteriores
+            $guardado = Tools::settings(self::GRUPO, $clave);
+            if (null === $guardado || ($guardado === '' && $valor !== '')) {
                 Tools::settingsSet(self::GRUPO, $clave, $valor);
                 $cambios = true;
             }
@@ -114,6 +132,41 @@ class Ajustes
     {
         $text = trim((string)self::valor('texto_legal'));
         return empty($text) ? Tools::trans('fa-legal-default') : Tools::fixHtml($text);
+    }
+
+    /**
+     * Dirección pública de la instalación, para los enlaces de firma y de verificación.
+     * Se toma de los ajustes y no de la petición, para que un enlace no dependa de la
+     * cabecera Host ni salga como localhost desde el cron.
+     *
+     * @return string Sin barra final. Vacío si no está configurada y no hay petición web.
+     */
+    public static function urlBase(): string
+    {
+        $url = trim((string)self::valor('url_publica'));
+        if ($url === '') {
+            $url = trim((string)Tools::settings('default', 'site_url', ''));
+        }
+        if ($url === '' && PHP_SAPI !== 'cli') {
+            $url = Tools::siteUrl();
+        }
+
+        return rtrim($url, '/');
+    }
+
+    /**
+     * Guarda la dirección con la que un usuario del ERP usa la instalación, si todavía no
+     * hay ninguna configurada.
+     */
+    public static function recordarUrl(): void
+    {
+        if (PHP_SAPI === 'cli' || trim((string)self::valor('url_publica')) !== ''
+            || trim((string)Tools::settings('default', 'site_url', '')) !== '') {
+            return;
+        }
+
+        Tools::settingsSet(self::GRUPO, 'url_publica', rtrim(Tools::siteUrl(), '/'));
+        Tools::settingsSave();
     }
 
     /**

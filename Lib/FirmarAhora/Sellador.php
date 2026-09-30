@@ -10,15 +10,15 @@ use FacturaScripts\Core\Model\Base\BusinessDocument;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ContratoFirma;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
-use FacturaScripts\Plugins\FirmarAhora\Lib\Export\PDFExport;
+use FacturaScripts\Plugins\FirmarAhora\Lib\Export\FirmarAhoraExport;
 use Throwable;
 
 /**
  * Genera el pdf de un documento con sus firmas y, al firmar, la copia sellada: ese pdf
  * más la página de certificado de evidencias, guardado en disco con su huella SHA-256.
  *
- * Se usa siempre el PDFExport de este plugin (y no el de Dinamic) para que la copia
- * sellada tenga el mismo formato aunque otro plugin cambie el pdf de los documentos.
+ * Se usa siempre el exportador de este plugin para que la copia sellada tenga el mismo
+ * formato aunque otro plugin cambie el pdf de los documentos.
  */
 class Sellador
 {
@@ -57,7 +57,7 @@ class Sellador
         }
 
         $ruta = self::CARPETA_SELLADOS . $solicitud->token . '.pdf';
-        if (false === file_put_contents(FS_FOLDER . '/' . $ruta, $contenido)) {
+        if (false === @file_put_contents(FS_FOLDER . '/' . $ruta, $contenido)) {
             Tools::log()->error('fa-file-error');
             return false;
         }
@@ -110,8 +110,7 @@ class Sellador
         // cualquier aviso de PHP que se imprimiera acabaría dentro del pdf
         ob_start();
         try {
-            $export = new PDFExport();
-            $export->forzarFirmas();
+            $export = new FirmarAhoraExport();
             $export->newDoc(self::titulo($documento), 0, '');
 
             if ($documento instanceof ContratoFirma) {

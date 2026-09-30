@@ -22,27 +22,39 @@
 				</div>
 			{% else %}
 				{% set sol = fsc.solicitud %}
-				{{ _self.documento(fsc, sol) }}
+				{# sin verificar el código sólo se ve de qué documento se trata #}
+				{% set bloqueado = fsc.necesitaCodigo() %}
+				{{ _self.documento(fsc, sol, bloqueado) }}
 
-				{% if sol.estado == 'firmada' %}
-					{{ _self.firmada(fsc, sol) }}
-				{% elseif sol.estado == 'rechazada' %}
+				{% if sol.estado == 'rechazada' %}
 					{{ _self.aviso('fa-solid fa-circle-xmark', 'danger', trans('fa-public-rejected')) }}
 				{% elseif sol.estado == 'anulada' %}
 					{{ _self.aviso('fa-solid fa-ban', 'secondary', trans('fa-public-cancelled')) }}
-				{% elseif not sol.estaAbierta() %}
+				{% elseif sol.estado != 'firmada' and not sol.estaAbierta() %}
 					{{ _self.aviso('fa-solid fa-hourglass-end', 'warning', trans('fa-public-expired')) }}
-				{% elseif fsc.necesitaCodigo() %}
+				{% elseif bloqueado %}
 					{{ _self.codigo(fsc, sol) }}
+				{% elseif sol.estado == 'firmada' %}
+					{{ _self.firmada(fsc, sol) }}
 				{% else %}
 					{{ _self.formulario(fsc, sol) }}
 				{% endif %}
 			{% endif %}
 		</div>
 	</div>
+	{% if not fsc.error and fsc.solicitud.estado == 'pendiente' %}
+		{# avisa de que un navegador ha abierto el enlace; un antivirus que sólo descarga la página no lo hace #}
+		<script>
+            window.addEventListener('load', function () {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('{{ fsc.urlPropia('abierta') | e('js') }}');
+                }
+            });
+		</script>
+	{% endif %}
 {% endblock %}
 
-{% macro documento(fsc, sol) %}
+{% macro documento(fsc, sol, bloqueado) %}
 	<div class="card fa-tarjeta mb-4">
 		<div class="card-body d-flex flex-wrap align-items-center gap-2">
 			<div class="me-auto">
@@ -55,26 +67,30 @@
 					{% endif %}
 				</div>
 			</div>
-			<a href="{{ fsc.urlPropia('pdf') }}" target="_blank" class="btn btn-outline-secondary">
-				<i class="fa-solid fa-file-pdf fa-fw"></i> {{ trans('fa-view-pdf') }}
-			</a>
+			{% if not bloqueado and fsc.documento %}
+				<a href="{{ fsc.urlPropia('pdf') }}" target="_blank" class="btn btn-outline-secondary">
+					<i class="fa-solid fa-file-pdf fa-fw"></i> {{ trans('fa-view-pdf') }}
+				</a>
+			{% endif %}
 		</div>
-		{% if fsc.html %}
-			<div class="fa-documento-html border-top">{{ fsc.html | raw }}</div>
-		{% else %}
-			{# iframe y no object: Safari no incrusta bien pdf con object #}
-			<div class="fa-pdf-caja border-top">
-				<iframe class="fa-pdf" src="{{ fsc.urlPropia('pdf') }}" title="{{ sol.doc_titulo }}"></iframe>
-			</div>
-		{% endif %}
-		{% set otros = fsc.otrosFirmantes() %}
-		{% if otros is not empty %}
-			<div class="card-footer bg-white small">
-				<span class="text-muted">{{ trans('fa-other-signers') }}:</span>
-				{% for otro in otros %}
-					<span class="me-2">{{ otro.rol }} <span class="fa-estado fa-estado-{{ otro.estado }}">{{ trans('fa-status-' ~ otro.estado) }}</span></span>
-				{% endfor %}
-			</div>
+		{% if not bloqueado and fsc.documento %}
+			{% if fsc.html %}
+				<div class="fa-documento-html border-top">{{ fsc.html | raw }}</div>
+			{% else %}
+				{# iframe y no object: Safari no incrusta bien pdf con object #}
+				<div class="fa-pdf-caja border-top">
+					<iframe class="fa-pdf" src="{{ fsc.urlPropia('pdf') }}" title="{{ sol.doc_titulo }}"></iframe>
+				</div>
+			{% endif %}
+			{% set otros = fsc.otrosFirmantes() %}
+			{% if otros is not empty %}
+				<div class="card-footer bg-white small">
+					<span class="text-muted">{{ trans('fa-other-signers') }}:</span>
+					{% for otro in otros %}
+						<span class="me-2">{{ otro.rol }} <span class="fa-estado fa-estado-{{ otro.estado }}">{{ trans('fa-status-' ~ otro.estado) }}</span></span>
+					{% endfor %}
+				</div>
+			{% endif %}
 		{% endif %}
 	</div>
 {% endmacro %}
@@ -93,7 +109,7 @@
 	<div class="card fa-tarjeta">
 		<div class="card-body">
 			<h2 class="h6"><i class="fa-solid fa-envelope-circle-check fa-fw"></i> {{ trans('fa-otp-title') }}</h2>
-			<p class="text-muted">{{ trans('fa-otp-intro', {'%email%': sol.emailOculto()}) }}</p>
+			<p class="text-muted">{{ trans(sol.estado == 'firmada' ? 'fa-otp-intro-signed' : 'fa-otp-intro', {'%email%': sol.emailOculto()}) }}</p>
 			<div class="row g-2 align-items-end">
 				<div class="col-md-5">
 					<form method="post" action="{{ fsc.urlPropia() }}" class="d-flex gap-2">
@@ -144,6 +160,7 @@
 					</div>
 				</div>
 			</div>
+			<p class="text-muted small mt-3 mb-0">{{ trans('fa-simple-signature-notice') }}</p>
 		</div>
 	</div>
 {% endmacro %}
@@ -162,7 +179,8 @@
 					</div>
 					<div class="col-md-5">
 						<label class="form-label" for="fa_nif">{{ trans('fa-id-number') }}</label>
-						<input type="text" name="fa_nif" id="fa_nif" class="form-control" maxlength="20" value="{{ sol.nif }}" required autocomplete="off">
+						{# el documento de identidad esperado no se muestra: lo tiene que escribir el firmante #}
+						<input type="text" name="fa_nif" id="fa_nif" class="form-control" maxlength="20" value="" required autocomplete="off">
 					</div>
 				</div>
 				{% include 'FirmarAhoraPad.html.twig' %}

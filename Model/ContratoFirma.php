@@ -135,12 +135,18 @@ class ContratoFirma extends ModelClass
     }
 
     /**
-     * Borra el contrato y sus solicitudes de firma, con sus archivos.
+     * Borra el contrato y sus solicitudes de firma. Un contrato firmado no se puede borrar:
+     * es la prueba de lo que se firmó.
      *
      * @return bool
      */
     public function delete(): bool
     {
+        if ($this->tieneFirmas()) {
+            Tools::log()->warning('fa-signed-cannot-delete');
+            return false;
+        }
+
         $solicitudes = $this->getSolicitudes();
         if (false === parent::delete()) {
             return false;
@@ -250,7 +256,7 @@ class ContratoFirma extends ModelClass
         $logo = PlantillaFirma::imagen($this->getPlantilla()->idlogo);
         if ($logo) {
             $src = Variables::srcImagen($logo->path, $paraPdf);
-            $html = '<p><img src="' . $src . '" alt="" style="max-height:70px;max-width:240px;"></p>' . $html;
+            $html = '<p><img ' . Variables::MARCA_IMAGEN . ' src="' . $src . '" alt="" style="max-height:70px;max-width:240px;"></p>' . $html;
         }
 
         return $html;

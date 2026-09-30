@@ -42,13 +42,21 @@ class PanelFirmas
         $sujeto = self::sujeto($documento);
         $solicitudes = SolicitudFirma::delDocumento($documento->modelClassName(), $codigo);
         $whatsapp = [];
+        $modificado = false;
         foreach ($solicitudes as $solicitud) {
             $whatsapp[$solicitud->id] = self::enlaceWhatsapp($solicitud, $sujeto['telefono']);
+            $modificado = $modificado
+                || ($solicitud->estado === SolicitudFirma::ESTADO_FIRMADA && Huella::cambiado($solicitud, $documento));
         }
+
+        // la opción "PDF con firmas" sólo existe en los documentos de venta
+        $esVenta = in_array($documento->modelClassName(), \FacturaScripts\Plugins\FirmarAhora\Init::DOCUMENTOS, true);
 
         $view->settings['fa'] = [
             'solicitudes' => $solicitudes,
             'whatsapp' => $whatsapp,
+            'modificado' => $modificado,
+            'pdf' => $esVenta && Ajustes::firmasEnImpresion() ? $documento->url() . '&action=export&option=FirmarAhora' : '',
             'nombre' => $sujeto['nombre'],
             'email' => $sujeto['email'],
             'nif' => $sujeto['nif'],
@@ -155,7 +163,8 @@ class PanelFirmas
                 return;
 
             case 'fa-borrar':
-                if ($solicitud->estado === SolicitudFirma::ESTADO_FIRMADA) {
+                // una firma hecha no se borra; sí la copia que dejó una conversión
+                if ($solicitud->estado === SolicitudFirma::ESTADO_FIRMADA && empty($solicitud->origen)) {
                     Tools::log()->warning('fa-signed-cannot-delete');
                     return;
                 }
@@ -235,7 +244,7 @@ class PanelFirmas
             $request->input('fa_tipo', '') ?? '',
             $request->input('fa_nombre', '') ?? '',
             $request->input('fa_nif', '') ?? '',
-            $request->ip(),
+            Conexion::ip(),
             $request->userAgent(),
             $user->nick
         );
@@ -261,7 +270,7 @@ class PanelFirmas
         $solicitud = Firmador::crear($documento, [
             'nombre' => $request->input('fa_nombre', ''),
             'email' => $request->input('fa_email', ''),
-            'nif' => $request->input('fa_nif', ''),
+            'nif' => $request->input('fa_nif_esperado', ''),
             'rol' => $request->input('fa_rol', ''),
             'requiere_otp' => (bool)$request->input('fa_otp', false),
             'dias' => $request->input('fa_dias', ''),

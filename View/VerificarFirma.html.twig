@@ -49,7 +49,12 @@
 								{% for f in fsc.firmantes %}
 									<tr>
 										<td><b>{{ f.rol }}</b><br><span class="small text-muted fa-codigo">{{ f.codigo }}</span></td>
-										<td>{{ f.estado == 'firmada' ? f.firmante_nombre ~ ' · ' ~ f.nifOculto() : '-' }}</td>
+										<td>
+											{{ f.estado == 'firmada' ? f.firmante_nombre ~ ' · ' ~ f.nifOculto() : '-' }}
+											{% if f.origen %}
+												<div class="small text-muted">{{ trans('fa-signed-on-origin', {'%doc%': f.origen}) }}</div>
+											{% endif %}
+										</td>
 										<td><span class="fa-estado fa-estado-{{ f.estado }}">{{ trans('fa-status-' ~ f.estado) }}</span></td>
 										<td>{{ f.firmado ?: '-' }}</td>
 										<td>{{ f.estado == 'firmada' ? (f.otp_verificado ? trans('yes') : trans('no')) : '-' }}</td>
@@ -64,6 +69,12 @@
 								<div class="fa-hash">{{ sol.hash_sellado }}</div>
 							</div>
 						{% endif %}
+						{% if sol.documentoBorrado() %}
+							<div class="alert alert-secondary small mt-3 mb-0">{{ trans('fa-doc-deleted-notice') }}</div>
+						{% elseif fsc.modificado %}
+							<div class="alert alert-warning small mt-3 mb-0">{{ trans('fa-doc-changed-notice') }}</div>
+						{% endif %}
+						<p class="text-muted small mt-3 mb-0">{{ trans('fa-verify-scope') }}</p>
 					</div>
 				</div>
 
@@ -76,9 +87,16 @@
 							<input type="file" name="pdf" class="form-control" accept="application/pdf" required style="max-width: 420px;">
 							<button type="submit" class="btn btn-outline-primary">{{ trans('fa-check') }}</button>
 						</form>
-						{% if fsc.coincide is not null %}
-							<div class="alert mt-3 mb-0 {{ fsc.coincide ? 'alert-success' : 'alert-danger' }}">
-								<b>{{ fsc.coincide ? trans('fa-file-matches') : trans('fa-file-differs') }}</b>
+						{% if fsc.resultado %}
+							{% set clases = {'sellada': 'alert-success', 'vista': 'alert-warning', 'distinto': 'alert-danger'} %}
+							<div class="alert mt-3 mb-0 {{ clases[fsc.resultado] }}">
+								{% if fsc.resultado == 'sellada' %}
+									<b>{{ trans('fa-file-matches') }}</b>
+								{% elseif fsc.resultado == 'vista' %}
+									<b>{{ trans('fa-file-matches-viewed', {'%role%': fsc.coincideCon}) }}</b>
+								{% else %}
+									<b>{{ trans('fa-file-differs') }}</b>
+								{% endif %}
 								<div class="fa-hash mt-1">SHA-256: {{ fsc.huellaSubida }}</div>
 							</div>
 						{% endif %}

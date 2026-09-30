@@ -16,7 +16,7 @@ Imagina que alguien te envía un PDF «firmado» y quieres saber si es exactamen
 2. En «Comprobar un PDF», sube el archivo.
 3. Pulsa «Comprobar».
 
-Si el PDF no se ha tocado, verás «El PDF coincide». Si le han cambiado algo, aunque sea una coma, verás que no coincide con ninguna copia firmada.
+Si el PDF es la copia firmada y no se ha tocado, verás «El PDF coincide». Si le han cambiado algo, aunque sea una coma, verás que no coincide con ninguna copia firmada.
 
 El archivo que subes no se guarda: solo se usa para hacer la comprobación.
 

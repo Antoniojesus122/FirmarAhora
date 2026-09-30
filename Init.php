@@ -6,6 +6,7 @@
 
 namespace FacturaScripts\Plugins\FirmarAhora;
 
+use FacturaScripts\Core\Lib\ExportManager;
 use FacturaScripts\Core\Template\InitClass;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
 use FacturaScripts\Dinamic\Model\ContratoFirma;
@@ -34,6 +35,11 @@ class Init extends InitClass
 
         // al convertir un documento (albarán -> factura...) se copian sus firmas
         $this->loadExtension(new Extension\Lib\BusinessDocumentGenerator());
+
+        // opción "PDF con firmas" del menú Imprimir: Lib/Export/FirmarAhoraExport
+        if (Ajustes::firmasEnImpresion()) {
+            ExportManager::addOption('FirmarAhora', 'fa-pdf-signed', 'fa-solid fa-file-signature');
+        }
     }
 
     public function uninstall(): void

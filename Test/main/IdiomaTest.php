@@ -15,7 +15,9 @@ class IdiomaTest extends TestCase
     {
         $this->assertSame('en_EN', Idioma::elegir('en-GB,en;q=0.9,es;q=0.8', 'es_ES'));
         $this->assertSame('es_ES', Idioma::elegir('es-ES,es;q=0.9,en;q=0.8', 'es_ES'));
-        $this->assertSame('en_EN', Idioma::elegir('fr-FR,fr;q=0.9,en;q=0.8', 'es_ES'));
+        $this->assertSame('fr_FR', Idioma::elegir('fr-FR,fr;q=0.9,en;q=0.8', 'es_ES'));
+        $this->assertSame('pt_BR', Idioma::elegir('pt-BR,pt;q=0.9', 'es_ES'));
+        $this->assertSame('pt_PT', Idioma::elegir('pt-PT,pt;q=0.9', 'es_ES'));
     }
 
     public function testConservaLaVarianteDelSitio(): void
@@ -24,9 +26,10 @@ class IdiomaTest extends TestCase
         $this->assertSame('es_ES', Idioma::elegir('es', 'en_EN'));
     }
 
-    public function testSinIdiomaConocidoSeQuedaElDelSitio(): void
+    public function testSaltaLosIdiomasSinTraduccion(): void
     {
-        $this->assertSame('es_ES', Idioma::elegir('fr-FR,de;q=0.8', 'es_ES'));
+        $this->assertSame('en_EN', Idioma::elegir('ja-JP,ja;q=0.9,en;q=0.8', 'es_ES'));
+        $this->assertSame('es_ES', Idioma::elegir('ja-JP,zh;q=0.8', 'es_ES'));
         $this->assertSame('es_ES', Idioma::elegir('', 'es_ES'));
     }
 }

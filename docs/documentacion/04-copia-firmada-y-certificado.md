@@ -25,6 +25,10 @@ Cada firma lleva un código del tipo **FA-7K2Q-9XMA**, que aparece al pie del PD
 
 ## Al convertir documentos
 
-Si conviertes un presupuesto firmado en pedido, albarán o factura, el nuevo documento conserva las firmas del original.
+Si conviertes un presupuesto firmado en pedido, albarán o factura, el nuevo documento muestra las firmas del original con la indicación «Firmó: Presupuesto…», porque el cliente firmó el presupuesto y no el documento nuevo. Si prefieres que no se copien, desactívalo en los ajustes.
+
+## Si el documento se modifica o se borra
+
+La copia firmada no cambia nunca. Si después de firmarse alguien modifica el documento, la pestaña **Firmas** y la página de verificación avisan de que ya no coincide con lo que se firmó. Y si el documento se borra, la firma, sus pruebas y la copia firmada se conservan en **Ventas > Firmas**.
 
 Siguiente: **Comprobar una firma**.

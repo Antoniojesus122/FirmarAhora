@@ -11,7 +11,17 @@
 			<i class="fa-solid fa-users fa-fw me-1"></i>
 			<b>{{ trans('fa-signers') }}</b>
 			<span class="badge bg-secondary ms-2">{{ fa.solicitudes | length }}</span>
+			{% if fa.pdf and fa.solicitudes is not empty %}
+				<a href="{{ fa.pdf }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-auto">
+					<i class="fa-solid fa-file-signature fa-fw"></i> {{ trans('fa-pdf-signed') }}
+				</a>
+			{% endif %}
 		</div>
+		{% if fa.modificado %}
+			<div class="alert alert-warning rounded-0 border-0 border-bottom small mb-0">
+				<i class="fa-solid fa-triangle-exclamation fa-fw"></i> {{ trans('fa-doc-changed-notice') }}
+			</div>
+		{% endif %}
 		{% if fa.solicitudes is empty %}
 			<div class="card-body text-muted">{{ trans('fa-no-requests') }}</div>
 		{% else %}
@@ -35,6 +45,7 @@
 								{{ sol.estado == 'firmada' ? sol.firmante_nombre : sol.nombre }}
 								{% if sol.estado == 'firmada' and sol.firmante_nif %}<span class="text-muted">· {{ sol.firmante_nif }}</span>{% endif %}
 								{% if sol.email %}<br><span class="text-muted small">{{ sol.email }}</span>{% endif %}
+								{% if sol.origen %}<br><span class="text-muted small">{{ trans('fa-signed-on-origin', {'%doc%': sol.origen}) }}</span>{% endif %}
 							</td>
 							<td>
 								<span class="fa-estado fa-estado-{{ sol.estado }}">{{ trans('fa-status-' ~ sol.estado) }}</span>
@@ -123,6 +134,11 @@
 								<div class="col-md-4">
 									<label class="form-label mb-0 small">{{ trans('fa-valid-days') }}</label>
 									<input type="number" name="fa_dias" class="form-control" min="0" value="{{ fa.dias }}">
+								</div>
+								<div class="col-12">
+									<label class="form-label mb-0 small">{{ trans('fa-expected-nif') }}</label>
+									<input type="text" name="fa_nif_esperado" class="form-control" maxlength="20" autocomplete="off">
+									<div class="form-text">{{ trans('fa-expected-nif-help') }}</div>
 								</div>
 								<div class="col-12">
 									<div class="form-check">

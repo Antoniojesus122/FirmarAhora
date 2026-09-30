@@ -105,6 +105,12 @@ class Correo
             return false;
         }
 
+        // sin dirección pública el enlace saldría como localhost (pasa en el cron)
+        if (Ajustes::urlBase() === '') {
+            Tools::log()->warning('fa-no-public-url');
+            return false;
+        }
+
         $doc = Tools::fixHtml((string)$solicitud->doc_titulo);
         $asunto = trim($asunto) !== '' ? trim($asunto) :
             Tools::trans($recordatorio ? 'fa-mail-reminder-subject' : 'fa-mail-invite-subject', ['%doc%' => $doc]);
@@ -130,6 +136,8 @@ class Correo
         $solicitud->enviado = Tools::dateTime();
         if ($recordatorio) {
             $solicitud->recordatorios++;
+        } else {
+            Otp::reiniciar($solicitud);
         }
         $solicitud->save();
         $solicitud->registrar($recordatorio ? 'recordatorio' : 'enviada', $solicitud->email, '', '', $user->nick ?? null);
@@ -156,7 +164,7 @@ class Correo
         $mail->to($user->email)
             ->subject(Tools::trans($firmada ? 'fa-mail-notice-signed-subject' : 'fa-mail-notice-rejected-subject', ['%doc%' => Tools::fixHtml($solicitud->doc_titulo)]))
             ->body($texto)
-            ->addMainBlock(new ButtonBlock(Tools::trans('fa-view-request'), Tools::siteUrl() . '/' . $solicitud->url()));
+            ->addMainBlock(new ButtonBlock(Tools::trans('fa-view-request'), Ajustes::urlBase() . '/' . $solicitud->url()));
 
         return $mail->send();
     }

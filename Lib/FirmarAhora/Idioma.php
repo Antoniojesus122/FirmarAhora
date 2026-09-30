@@ -11,11 +11,17 @@ use FacturaScripts\Core\Translator;
 
 /**
  * Idioma de las páginas públicas. El firmante no tiene usuario en el ERP, así que se
- * usa el de su navegador cuando el plugin tiene los textos en ese idioma (español o
- * inglés). Los emails a los usuarios del ERP se envían en el idioma de cada usuario.
+ * usa el de su navegador cuando el plugin está traducido a ese idioma. Los emails a los
+ * usuarios del ERP se envían en el idioma de cada usuario.
  */
 class Idioma
 {
+    /** @var array Idiomas a los que está traducido el plugin, por su código de dos letras. */
+    const TRADUCIDOS = [
+        'ca' => 'ca_ES', 'de' => 'de_DE', 'en' => 'en_EN', 'es' => 'es_ES', 'fr' => 'fr_FR',
+        'gl' => 'gl_ES', 'it' => 'it_IT', 'pt' => 'pt_PT',
+    ];
+
     /** @var ?string Idioma del sitio antes de cambiar al del firmante. */
     private static $sitio = null;
 
@@ -68,13 +74,18 @@ class Idioma
     public static function elegir(string $cabecera, string $actual): string
     {
         foreach (explode(',', $cabecera) as $parte) {
-            $codigo = strtolower(substr(trim(explode(';', $parte)[0]), 0, 2));
-            if ($codigo === 'es') {
-                return str_starts_with($actual, 'es_') ? $actual : 'es_ES';
+            $etiqueta = strtolower(trim(explode(';', $parte)[0]));
+            $codigo = substr($etiqueta, 0, 2);
+            if (false === isset(self::TRADUCIDOS[$codigo])) {
+                continue;
             }
-            if ($codigo === 'en') {
-                return 'en_EN';
+
+            // si el sitio ya está en ese idioma se respeta su variante (es_MX, va_ES...)
+            if ($codigo === strtolower(substr($actual, 0, 2))) {
+                return $actual;
             }
+
+            return $etiqueta === 'pt-br' ? 'pt_BR' : self::TRADUCIDOS[$codigo];
         }
 
         return $actual;

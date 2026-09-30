@@ -82,6 +82,10 @@
         <type>integer</type>
     </column>
     <column>
+        <name>hash_contenido</name>
+        <type>character varying(64)</type>
+    </column>
+    <column>
         <name>hash_original</name>
         <type>character varying(64)</type>
     </column>
@@ -97,6 +101,10 @@
     <column>
         <name>ip</name>
         <type>character varying(45)</type>
+    </column>
+    <column>
+        <name>ip_proxy</name>
+        <type>character varying(100)</type>
     </column>
     <column>
         <name>motivo_rechazo</name>
@@ -120,8 +128,22 @@
         <default>1</default>
     </column>
     <column>
+        <name>origen</name>
+        <type>character varying(200)</type>
+    </column>
+    <column>
+        <name>otp_envios</name>
+        <type>integer</type>
+        <default>0</default>
+    </column>
+    <column>
         <name>otp_expira</name>
         <type>timestamp</type>
+    </column>
+    <column>
+        <name>otp_fallos</name>
+        <type>integer</type>
+        <default>0</default>
     </column>
     <column>
         <name>otp_hash</name>
@@ -131,6 +153,10 @@
         <name>otp_intentos</name>
         <type>integer</type>
         <default>0</default>
+    </column>
+    <column>
+        <name>otp_sesion</name>
+        <type>character varying(80)</type>
     </column>
     <column>
         <name>otp_verificado</name>

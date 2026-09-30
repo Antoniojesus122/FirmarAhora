@@ -10,8 +10,9 @@ use Closure;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
 
 /**
- * Al borrar un presupuesto, pedido, albarán o factura se borran sus solicitudes de
- * firma, con sus imágenes y copias selladas.
+ * Al borrar un presupuesto, pedido, albarán o factura se borran sus solicitudes sin
+ * firmar. Las firmadas se conservan, con su copia sellada: son la prueba de lo que se
+ * firmó y no deben desaparecer con el documento.
  */
 class SalesDocument
 {
@@ -19,7 +20,11 @@ class SalesDocument
     {
         return function () {
             foreach (SolicitudFirma::delDocumento($this->modelClassName(), (string)$this->primaryColumnValue()) as $solicitud) {
-                $solicitud->delete();
+                if ($solicitud->estado === SolicitudFirma::ESTADO_FIRMADA && empty($solicitud->origen)) {
+                    $solicitud->archivar();
+                } else {
+                    $solicitud->delete();
+                }
             }
         };
     }

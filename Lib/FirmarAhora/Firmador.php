@@ -6,11 +6,13 @@
 
 namespace FacturaScripts\Plugins\FirmarAhora\Lib\FirmarAhora;
 
+use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Model\EstadoDocumento;
 use FacturaScripts\Dinamic\Model\PresupuestoCliente;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
+use Throwable;
 
 /**
  * Operaciones sobre las solicitudes de firma: crearlas, firmarlas, rechazarlas,
@@ -23,6 +25,10 @@ class Firmador
 
     /** @var int Tamaño máximo de la imagen de firma. */
     const MAX_BYTES = 2097152;
+
+    /** @var int Ancho y alto máximos de la imagen de firma, en píxeles. */
+    const MAX_ANCHO = 2400;
+    const MAX_ALTO = 1600;
 
     /** @var string[] Formas de firmar admitidas. */
     const TIPOS = ['dibujada', 'escrita', 'imagen'];
@@ -53,8 +59,9 @@ class Firmador
 
     /**
      * Copia las firmas de un documento a otro, al convertirlo (albarán a factura, etc.).
-     * Se copian como firmas ya hechas, con una imagen propia y un evento que indica de
-     * qué documento vienen. La copia sellada no se copia: pertenece al documento original.
+     * El firmante no vio el documento nuevo, así que cada copia guarda en "origen" el
+     * documento que sí firmó, y así se muestra en el pdf, en el panel y al verificarla. La
+     * copia sellada y la huella del pdf no se copian: pertenecen al documento original.
      *
      * @param object $origen
      * @param object $destino
@@ -62,7 +69,7 @@ class Firmador
     public static function copiarFirmas($origen, $destino): void
     {
         $codigoDestino = (string)$destino->primaryColumnValue();
-        if (empty($codigoDestino) || false === in_array($destino->modelClassName(), \FacturaScripts\Plugins\FirmarAhora\Init::DOCUMENTOS, true) || false === empty(SolicitudFirma::delDocumento($destino->modelClassName(), $codigoDestino))) {
+        if (false === Ajustes::copiarAlConvertir() || empty($codigoDestino) || false === in_array($destino->modelClassName(), \FacturaScripts\Plugins\FirmarAhora\Init::DOCUMENTOS, true) || false === empty(SolicitudFirma::delDocumento($destino->modelClassName(), $codigoDestino))) {
             return;
         }
 
@@ -76,9 +83,10 @@ class Firmador
         foreach ($firmadas as $original) {
             $copia = new SolicitudFirma();
             foreach (['rol', 'orden', 'nombre', 'email', 'nif', 'estado', 'presencial', 'requiere_otp', 'otp_verificado',
-                         'firma_tipo', 'firmado', 'firmante_nombre', 'firmante_nif', 'ip', 'user_agent', 'hash_original'] as $field) {
+                         'firma_tipo', 'firmado', 'firmante_nombre', 'firmante_nif', 'ip', 'ip_proxy', 'user_agent'] as $field) {
                 $copia->{$field} = $original->{$field};
             }
+            $copia->origen = mb_substr($original->origen ?: $original->doc_titulo . ' (' . $original->codigo . ')', 0, 200);
             $copia->doc_model = $destino->modelClassName();
             $copia->doc_code = $codigoDestino;
             $copia->doc_titulo = mb_substr(Sellador::titulo($destino), 0, 150);
@@ -135,11 +143,19 @@ class Firmador
         }
 
         $solicitud->registrar('creada', $solicitud->rol, '', '', $nick);
+        if (null !== $nick) {
+            Ajustes::recordarUrl();
+        }
+
         return $solicitud;
     }
 
     /**
      * Firma una solicitud: guarda la imagen y las evidencias, y genera la copia sellada.
+     *
+     * Todo se hace en una transacción, con las solicitudes del documento bloqueadas: si la
+     * copia sellada no se puede generar, la firma no queda guardada, y dos firmas que lleguen
+     * a la vez se procesan una detrás de otra.
      *
      * @param SolicitudFirma $solicitud
      * @param string $dataUrl Imagen png en data url.
@@ -156,18 +172,14 @@ class Firmador
     public static function firmar(SolicitudFirma $solicitud, string $dataUrl, string $tipo, string $nombre, string $nif,
                                   string $ip, string $userAgent, ?string $nick = null, array $ubicacion = []): bool
     {
-        if (false === $solicitud->estaAbierta()) {
-            Tools::log()->warning('fa-request-closed');
-            return false;
-        }
-
-        if ($solicitud->requiere_otp && false === $solicitud->otp_verificado && false === $solicitud->presencial) {
-            Tools::log()->warning('fa-otp-required');
-            return false;
-        }
-
         if (trim($nombre) === '') {
             Tools::log()->warning('fa-signer-name-required');
+            return false;
+        }
+
+        if (false === $solicitud->presencial && false === self::nifEsperado($solicitud, $nif)) {
+            $solicitud->registrar('nif_error', '', self::ip($ip), $userAgent);
+            Tools::log()->warning('fa-nif-mismatch');
             return false;
         }
 
@@ -177,36 +189,46 @@ class Firmador
             return false;
         }
 
-        // huella del documento tal y como lo ve el firmante, antes de añadir su firma
-        $solicitud->hash_original = hash('sha256', Sellador::pdf($documento, false));
+        // huellas del documento tal y como lo ve el firmante, antes de añadir su firma. Se
+        // calculan fuera de la transacción: generar el pdf puede crear tablas que el núcleo
+        // aún no ha usado, y eso no se puede hacer dentro de una
+        $datos = [
+            'png' => $png, 'tipo' => $tipo, 'nombre' => $nombre, 'nif' => $nif, 'ip' => self::ip($ip),
+            'agente' => $userAgent, 'nick' => $nick, 'ubicacion' => $ubicacion,
+            'hash_original' => hash('sha256', Sellador::pdf($documento, false)),
+            'hash_contenido' => Huella::contenido($documento),
+        ];
 
-        if (false === Tools::folderCheckOrCreate(FS_FOLDER . '/' . self::CARPETA_FIRMAS)) {
-            Tools::log()->error('fa-file-error');
-            return false;
-        }
-        $ruta = self::CARPETA_FIRMAS . $solicitud->token . '.png';
-        if (false === file_put_contents(FS_FOLDER . '/' . $ruta, $png)) {
-            Tools::log()->error('fa-file-error');
-            return false;
-        }
-
-        $solicitud->firma_path = $ruta;
-        $solicitud->firma_tipo = in_array($tipo, self::TIPOS, true) ? $tipo : 'dibujada';
-        $solicitud->firmante_nombre = $nombre;
-        $solicitud->firmante_nif = $nif;
-        $solicitud->firmado = Tools::dateTime();
-        $solicitud->ip = self::ip($ip);
-        $solicitud->user_agent = $userAgent;
-        $solicitud->estado = SolicitudFirma::ESTADO_FIRMADA;
-        self::ubicar($solicitud, $ubicacion);
-        if (false === $solicitud->save()) {
-            return false;
+        $db = new DataBase();
+        $propia = false === $db->inTransaction() && $db->beginTransaction();
+        $archivos = [];
+        $idestado = null;
+        $ok = false;
+        try {
+            $ok = self::guardarFirma($db, $solicitud, $datos, $archivos, $idestado);
+        } catch (Throwable $exc) {
+            Tools::log()->error('fa-sign-error', ['%error%' => $exc->getMessage()]);
         }
 
-        $solicitud->registrar('firmada', 'SHA-256 ' . $solicitud->hash_original, $solicitud->ip, $userAgent, $nick);
+        if (false === $ok) {
+            if ($propia) {
+                $db->rollback();
+            }
+            foreach ($archivos as $archivo) {
+                if (is_file($archivo)) {
+                    unlink($archivo);
+                }
+            }
+            $solicitud->reload();
+            return false;
+        }
 
-        if (Sellador::sellar($solicitud, $documento)) {
-            $solicitud->registrar('sellada', 'SHA-256 ' . $solicitud->hash_sellado, '', '', $nick);
+        if ($propia) {
+            $db->commit();
+        }
+
+        if (null !== $idestado) {
+            self::avanzarPresupuesto($solicitud, $idestado);
         }
 
         if (Ajustes::copiaFirmante() && false === empty($solicitud->email)) {
@@ -216,12 +238,11 @@ class Firmador
             Correo::avisoEmisor($solicitud);
         }
 
-        self::avanzarPresupuesto($solicitud, $documento, $nick);
         return true;
     }
 
     /**
-     * Primera ip válida de la cabecera (detrás de un proxy llega "cliente, proxy1...").
+     * Primera ip válida de una lista separada por comas.
      *
      * @param string $ip
      *
@@ -251,25 +272,42 @@ class Firmador
      */
     public static function rechazar(SolicitudFirma $solicitud, string $motivo, string $ip, string $userAgent): bool
     {
-        if (false === $solicitud->estaAbierta()) {
-            Tools::log()->warning('fa-request-closed');
-            return false;
-        }
-
         if (trim($motivo) === '') {
             Tools::log()->warning('fa-reason-required');
             return false;
         }
 
-        $solicitud->estado = SolicitudFirma::ESTADO_RECHAZADA;
-        $solicitud->motivo_rechazo = $motivo;
-        $solicitud->ip = self::ip($ip);
-        $solicitud->user_agent = $userAgent;
-        if (false === $solicitud->save()) {
+        $db = new DataBase();
+        $propia = false === $db->inTransaction() && $db->beginTransaction();
+        self::bloquear($db, $solicitud);
+
+        $ok = false;
+        if (false === $solicitud->estaAbierta()) {
+            Tools::log()->warning('fa-request-closed');
+        } elseif ($solicitud->requiere_otp && false === Otp::sesionValida($solicitud)) {
+            Tools::log()->warning('fa-otp-required');
+        } else {
+            $solicitud->estado = SolicitudFirma::ESTADO_RECHAZADA;
+            $solicitud->motivo_rechazo = $motivo;
+            $solicitud->ip = self::ip($ip);
+            $solicitud->ip_proxy = Conexion::proxy();
+            $solicitud->user_agent = $userAgent;
+            $ok = $solicitud->save();
+        }
+
+        if (false === $ok) {
+            if ($propia) {
+                $db->rollback();
+            }
+            $solicitud->reload();
             return false;
         }
 
         $solicitud->registrar('rechazada', $motivo, $solicitud->ip, $userAgent);
+        if ($propia) {
+            $db->commit();
+        }
+
         if (Ajustes::avisarEmisor()) {
             Correo::avisoEmisor($solicitud);
         }
@@ -278,19 +316,43 @@ class Firmador
     }
 
     /**
-     * Cuando ya han firmado todos los firmantes de un presupuesto abierto, lo pasa al estado
-     * que genera el pedido o la factura, según los ajustes. El documento nuevo recibe una
-     * copia de las firmas al generarse.
+     * Pasa el presupuesto al estado que genera el pedido o la factura. El documento nuevo
+     * recibe una copia de las firmas al generarse. Se hace fuera de la transacción de la
+     * firma porque el núcleo puede tener que crear tablas.
+     *
+     * @param SolicitudFirma $solicitud
+     * @param int $idestado
+     */
+    private static function avanzarPresupuesto(SolicitudFirma $solicitud, int $idestado): void
+    {
+        $documento = $solicitud->getDocumento();
+        if (null === $documento || false === (bool)$documento->editable) {
+            return;
+        }
+
+        $documento->idestado = $idestado;
+        if (false === $documento->save()) {
+            Tools::log()->warning('record-save-error');
+        }
+    }
+
+    /**
+     * Cuando ya han firmado todos los firmantes de un presupuesto abierto, decide el estado
+     * al que hay que pasarlo según los ajustes y lo deja apuntado en el registro. Se llama
+     * con las solicitudes del documento bloqueadas, así que sólo una petición lo consigue
+     * aunque lleguen dos firmas a la vez.
      *
      * @param SolicitudFirma $solicitud
      * @param object $documento
      * @param ?string $nick
+     *
+     * @return ?int Estado al que pasar el presupuesto, o null si no toca.
      */
-    private static function avanzarPresupuesto(SolicitudFirma $solicitud, $documento, ?string $nick): void
+    private static function reservarAvance(SolicitudFirma $solicitud, $documento, ?string $nick): ?int
     {
         $destino = ['pedido' => 'PedidoCliente', 'factura' => 'FacturaCliente'][Ajustes::presupuestoFirmado()] ?? '';
         if ($destino === '' || false === $documento instanceof PresupuestoCliente || false === (bool)$documento->editable) {
-            return;
+            return null;
         }
 
         $firmadas = 0;
@@ -298,19 +360,23 @@ class Firmador
             if ($otra->estado === SolicitudFirma::ESTADO_FIRMADA) {
                 $firmadas++;
             } elseif ($otra->estado !== SolicitudFirma::ESTADO_ANULADA) {
-                return;
+                return null;
+            }
+
+            foreach ($otra->getEventos() as $evento) {
+                if ($evento->tipo === 'presupuesto') {
+                    return null;
+                }
             }
         }
 
         $estado = new EstadoDocumento();
         if ($firmadas === 0 || false === $estado->loadWhere([Where::eq('tipodoc', 'PresupuestoCliente'), Where::eq('generadoc', $destino)])) {
-            return;
+            return null;
         }
 
-        $documento->idestado = $estado->idestado;
-        if ($documento->save()) {
-            $solicitud->registrar('presupuesto', $estado->nombre, '', '', $nick);
-        }
+        $solicitud->registrar('presupuesto', $estado->nombre, '', '', $nick);
+        return (int)$estado->idestado;
     }
 
     /**
@@ -344,6 +410,104 @@ class Firmador
     }
 
     /**
+     * Bloquea las solicitudes del documento hasta que termine la transacción y vuelve a
+     * leer la solicitud, por si otra petición la cambió mientras esperaba.
+     *
+     * @param DataBase $db
+     * @param SolicitudFirma $solicitud
+     */
+    private static function bloquear(DataBase $db, SolicitudFirma $solicitud): void
+    {
+        $db->select('SELECT id FROM ' . SolicitudFirma::tableName()
+            . ' WHERE doc_model = ' . $db->var2str($solicitud->doc_model)
+            . ' AND doc_code = ' . $db->var2str($solicitud->doc_code)
+            . ' FOR UPDATE');
+        $solicitud->reload();
+    }
+
+    /**
+     * Parte de firmar() que va dentro de la transacción.
+     *
+     * @param DataBase $db
+     * @param SolicitudFirma $solicitud
+     * @param array $datos png, tipo, nombre, nif, ip, agente, nick, ubicacion y las dos huellas.
+     * @param array $archivos Se rellena con los archivos escritos, para borrarlos si algo falla.
+     * @param ?int $idestado Se rellena con el estado al que hay que pasar el presupuesto, si toca.
+     *
+     * @return bool
+     */
+    private static function guardarFirma(DataBase $db, SolicitudFirma $solicitud, array $datos, array &$archivos, ?int &$idestado): bool
+    {
+        self::bloquear($db, $solicitud);
+        if (false === $solicitud->estaAbierta()) {
+            Tools::log()->warning('fa-request-closed');
+            return false;
+        }
+
+        if ($solicitud->requiere_otp && false === $solicitud->presencial && false === Otp::sesionValida($solicitud)) {
+            Tools::log()->warning('fa-otp-required');
+            return false;
+        }
+
+        $documento = $solicitud->getDocumento();
+        if (null === $documento || false === Tools::folderCheckOrCreate(FS_FOLDER . '/' . self::CARPETA_FIRMAS)) {
+            Tools::log()->error('fa-file-error');
+            return false;
+        }
+
+        $solicitud->hash_original = $datos['hash_original'];
+        $solicitud->hash_contenido = $datos['hash_contenido'];
+
+        $ruta = self::CARPETA_FIRMAS . $solicitud->token . '.png';
+        $archivos[] = FS_FOLDER . '/' . $ruta;
+        $archivos[] = FS_FOLDER . '/' . Sellador::CARPETA_SELLADOS . $solicitud->token . '.pdf';
+        if (false === file_put_contents(FS_FOLDER . '/' . $ruta, $datos['png'])) {
+            Tools::log()->error('fa-file-error');
+            return false;
+        }
+
+        $solicitud->firma_path = $ruta;
+        $solicitud->firma_tipo = in_array($datos['tipo'], self::TIPOS, true) ? $datos['tipo'] : 'dibujada';
+        $solicitud->firmante_nombre = $datos['nombre'];
+        $solicitud->firmante_nif = $datos['nif'];
+        $solicitud->firmado = Tools::dateTime();
+        $solicitud->ip = $datos['ip'];
+        $solicitud->ip_proxy = $solicitud->presencial ? '' : Conexion::proxy();
+        $solicitud->user_agent = $datos['agente'];
+        $solicitud->estado = SolicitudFirma::ESTADO_FIRMADA;
+        self::ubicar($solicitud, $datos['ubicacion']);
+        if (false === $solicitud->save()) {
+            return false;
+        }
+
+        $solicitud->registrar('firmada', 'SHA-256 ' . $solicitud->hash_original, $solicitud->ip, $datos['agente'], $datos['nick']);
+
+        if (false === Sellador::sellar($solicitud, $documento)) {
+            Tools::log()->error('fa-seal-error');
+            return false;
+        }
+
+        $solicitud->registrar('sellada', 'SHA-256 ' . $solicitud->hash_sellado, '', '', $datos['nick']);
+        $idestado = self::reservarAvance($solicitud, $documento, $datos['nick']);
+        return true;
+    }
+
+    /**
+     * Si la solicitud indica el documento de identidad de quien debe firmar, el que escribe
+     * el firmante tiene que ser el mismo.
+     *
+     * @param SolicitudFirma $solicitud
+     * @param string $nif
+     *
+     * @return bool
+     */
+    private static function nifEsperado(SolicitudFirma $solicitud, string $nif): bool
+    {
+        $esperado = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string)$solicitud->nif));
+        return $esperado === '' || $esperado === strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $nif));
+    }
+
+    /**
      * Extrae el png de una data url y comprueba que de verdad es un png.
      *
      * @param string $dataUrl
@@ -359,7 +523,8 @@ class Firmador
             return null;
         }
 
-        if (strlen($png) > self::MAX_BYTES || 0 !== strpos($png, "\x89PNG\r\n\x1a\n") || false === @getimagesizefromstring($png)) {
+        $medidas = strlen($png) <= self::MAX_BYTES && 0 === strpos($png, "\x89PNG\r\n\x1a\n") ? @getimagesizefromstring($png) : false;
+        if (false === $medidas || $medidas[0] < 1 || $medidas[1] < 1 || $medidas[0] > self::MAX_ANCHO || $medidas[1] > self::MAX_ALTO) {
             Tools::log()->warning('fa-signature-invalid');
             return null;
         }

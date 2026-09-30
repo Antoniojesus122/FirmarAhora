@@ -13,23 +13,29 @@ enlace que el cliente abre en cualquier dispositivo sin registrarse.
   manuscrita); o subiendo una imagen de la firma.
 - **Invitación por email** con un botón para firmar, **recordatorios automáticos** y **caducidad** del enlace.
 - **Enviar por WhatsApp**: un botón abre WhatsApp con el mensaje y el enlace de firma ya escritos.
-- **Código por email (OTP)** opcional: antes de firmar, el firmante demuestra que tiene acceso al buzón.
+- **Código por email (OTP)** opcional: hasta que el firmante no demuestra que tiene acceso al buzón, no puede ver
+  el documento ni firmarlo. El código vale para el navegador que lo verifica, no para cualquiera que tenga el enlace.
 - **Rechazar con motivo**: el firmante puede negarse a firmar, y quien envió la solicitud recibe el aviso.
 - **Copia sellada**: al firmar se guarda el PDF definitivo con una página de **certificado de evidencias**
   (firmantes, NIF, IP, navegador, método, OTP, huellas SHA-256 y registro de eventos). El firmante la recibe
   por email y la puede descargar desde el enlace.
 - **Verificación pública**: con el código que figura en el PDF (FA-XXXX-XXXX), cualquiera comprueba en
   `/VerificarFirma` quién firmó y cuándo, y puede **subir el PDF** para saber si es idéntico a la copia sellada.
-- **Firmas en los PDF** de los documentos, al pie y a la derecha, después de los totales.
+- **PDF con firmas**: una opción más del menú Imprimir, con las firmas al pie y a la derecha. El PDF normal de
+  FacturaScripts no se toca, así que convive con otros plugins que cambien el diseño de los documentos.
 - **Contratos desde plantillas**: editor visual, variables (`{{cliente.nombre}}`, `{{factura.total}}`…),
   logo, firma de la empresa, **envío masivo** a una lista de emails. El texto queda bloqueado en cuanto
   alguien firma.
 - **Registro de auditoría** de cada solicitud: creada, enviada, abierta, código enviado o verificado,
   firmada, sellada, rechazada, anulada, caducada.
-- Al **convertir** un documento (de presupuesto a pedido, albarán o factura) el nuevo recibe una copia de las firmas.
+- Al **convertir** un documento (de presupuesto a pedido, albarán o factura) el nuevo muestra las firmas del
+  original, indicando sobre qué documento se hicieron.
+- **Las pruebas no se pierden**: si se borra un documento firmado, la firma y su copia sellada se conservan; si se
+  modifica, el plugin avisa de que ya no coincide con lo que se firmó.
 - **Presupuesto aceptado al firmar** (opcional): cuando firman todos, el presupuesto pasa solo a pedido o a factura.
 - **Ubicación del firmante** (opcional): con su permiso, se añade al certificado de evidencias.
-- **Idioma del firmante**: las páginas de firma y verificación se muestran en español o en inglés según su navegador.
+- **Idioma del firmante**: las páginas de firma y verificación se muestran en el idioma de su navegador. El plugin
+  está traducido al español, inglés, catalán, valenciano, gallego, francés, italiano, portugués y alemán.
   Los PDF firmados se generan siempre en el idioma de la empresa.
 
 ## Uso
@@ -81,13 +87,25 @@ Los recordatorios y la caducidad necesitan el **cron** de FacturaScripts.
 ## Notas técnicas
 
 - Tablas: `fa_solicitudes`, `fa_eventos`, `fa_plantillas`, `fa_contratos`.
-- La ubicación solo se puede pedir si la web se sirve por https (lo exigen los navegadores).
 - Archivos: imágenes de firma en `MyFiles/FirmarAhora/firmas/`, copias selladas en `MyFiles/FirmarAhora/sellados/`.
 - Enlace de firma: `/FirmarAhora?t=<token de 48 caracteres>`. Verificación: `/VerificarFirma?c=<código>`.
-- El PDF de los documentos lo amplía `Lib/Export/PDFExport`. Si otro plugin sustituye también el PDF de
-  documentos (por ejemplo PlantillasPDF), las firmas no aparecerán en sus impresiones; la copia sellada sí las
-  lleva siempre, porque se genera con el motor propio del plugin.
-- Las firmas son **firmas electrónicas simples con evidencias** (reglamento eIDAS), no firmas cualificadas.
+- Los enlaces usan la **URL pública** de los ajustes (o la del Panel de control). Sin ella no se envían emails
+  desde el cron, para que no salgan con `localhost`.
+- El PDF con firmas lo genera `Lib/Export/FirmarAhoraExport`, que se añade como opción de exportación. El plugin no
+  sustituye el `PDFExport` del núcleo.
+- La ubicación solo se puede pedir si la web se sirve por https (lo exigen los navegadores).
+- La IP de las evidencias es la de la conexión. Si la web está detrás de un proxy o de Cloudflare, indícalo en los
+  ajustes para que se use la cabecera que pone el proxy; sin ese ajuste, las cabeceras se guardan solo como dato
+  sin verificar.
+
+## Alcance legal y técnico
+
+Las firmas son **firmas electrónicas simples con evidencias** (reglamento eIDAS), no firmas cualificadas:
+
+- El PDF no lleva firma con certificado digital (PAdES) ni sello de tiempo de un tercero.
+- Las huellas y las copias selladas se guardan en la propia instalación. Quien controle la base de datos y el disco
+  podría sustituirlas, así que su valor como prueba depende de quien custodia el sistema.
+- Por eso el firmante recibe su propia copia sellada por email: es una prueba que queda fuera de la instalación.
 
 ## Licencia
 

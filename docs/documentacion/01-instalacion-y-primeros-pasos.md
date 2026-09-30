@@ -19,11 +19,14 @@ Al activarlo aparece una pestaña nueva, **Firmas**, en tus presupuestos, pedido
 - si las solicitudes piden por defecto un código enviado por email;
 - si el cliente recibe por email su copia firmada;
 - si te llega un aviso cuando alguien firma o se niega a firmar;
-- si las firmas salen al imprimir los documentos;
+- si aparece la opción «PDF con firmas» en el menú Imprimir;
 - el texto que el cliente acepta antes de firmar;
 - qué hacer con un presupuesto cuando lo firman todos: dejarlo como está, pasarlo a pedido o pasarlo a factura;
 - si se pide la ubicación de quien firma a distancia;
-- si la página de firma se muestra en el idioma del navegador del cliente (español o inglés).
+- si la página de firma se muestra en el idioma del navegador del cliente;
+- si las firmas se copian al convertir un documento en otro;
+- de dónde se toma la IP del firmante (déjalo en «Conexión directa» salvo que tu web esté detrás de un proxy o de Cloudflare);
+- la URL pública de tu FacturaScripts, que es la que llevan los enlaces de firma.
 
 Los valores que trae de fábrica sirven para empezar.
 

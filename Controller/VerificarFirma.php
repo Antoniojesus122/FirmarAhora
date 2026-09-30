@@ -8,7 +8,9 @@ namespace FacturaScripts\Plugins\FirmarAhora\Controller;
 
 use FacturaScripts\Core\Html;
 use FacturaScripts\Core\Template\Controller;
+use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Huella;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Idioma;
 use FacturaScripts\Dinamic\Model\SolicitudFirma;
 
@@ -27,8 +29,14 @@ class VerificarFirma extends Controller
     /** @var string */
     public $codigo = '';
 
-    /** @var ?bool Resultado de comparar el pdf subido: null si no se ha subido ninguno. */
-    public $coincide = null;
+    /** @var string Papel del firmante que vio el pdf subido, cuando el resultado es "vista". */
+    public $coincideCon = '';
+
+    /** @var bool El documento ya no tiene en el ERP los datos que tenía al firmarse. */
+    public $modificado = false;
+
+    /** @var string Resultado de comparar el pdf subido: sellada, vista, distinto o vacío si no se ha subido. */
+    public $resultado = '';
 
     /** @var string Huella del pdf subido. */
     public $huellaSubida = '';
@@ -67,6 +75,7 @@ class VerificarFirma extends Controller
                         return $firmante->estado !== SolicitudFirma::ESTADO_ANULADA;
                     }
                 ));
+                $this->comprobarCambios();
             } else {
                 Tools::log()->warning('fa-code-not-found');
             }
@@ -76,7 +85,7 @@ class VerificarFirma extends Controller
             $this->comprobarArchivo();
         }
 
-        \FacturaScripts\Core\Lib\AssetManager::addCss(Tools::config('route') . '/Dinamic/Assets/CSS/FirmarAhora.css');
+        AssetManager::addCss(Tools::config('route') . '/Dinamic/Assets/CSS/FirmarAhora.css');
         echo Html::render('VerificarFirma.html.twig', [
             'controllerName' => 'VerificarFirma',
             'debugBarRender' => false,
@@ -91,8 +100,9 @@ class VerificarFirma extends Controller
     }
 
     /**
-     * Compara la huella del pdf subido con las copias selladas y los documentos vistos
-     * por los firmantes.
+     * Compara la huella del pdf subido con las copias selladas y, si no es ninguna, con el
+     * documento que vio cada firmante antes de firmar. Son cosas distintas: el segundo no
+     * lleva las firmas.
      */
     private function comprobarArchivo(): void
     {
@@ -103,11 +113,37 @@ class VerificarFirma extends Controller
         }
 
         $this->huellaSubida = hash_file('sha256', $archivo->getPathname());
-        $this->coincide = false;
+        $this->resultado = 'distinto';
         foreach ($this->firmantes as $firmante) {
-            if (in_array($this->huellaSubida, [$firmante->hash_sellado, $firmante->hash_original], true)) {
-                $this->coincide = true;
-                break;
+            if (false === empty($firmante->hash_sellado) && hash_equals($firmante->hash_sellado, $this->huellaSubida)) {
+                $this->resultado = 'sellada';
+                return;
+            }
+        }
+
+        foreach ($this->firmantes as $firmante) {
+            if (false === empty($firmante->hash_original) && hash_equals($firmante->hash_original, $this->huellaSubida)) {
+                $this->resultado = 'vista';
+                $this->coincideCon = (string)$firmante->rol;
+                return;
+            }
+        }
+    }
+
+    /**
+     * Mira si el documento sigue teniendo los datos que tenía cuando firmó cada firmante.
+     */
+    private function comprobarCambios(): void
+    {
+        $documento = $this->solicitud->getDocumento();
+        if (null === $documento) {
+            return;
+        }
+
+        foreach ($this->firmantes as $firmante) {
+            if ($firmante->estado === SolicitudFirma::ESTADO_FIRMADA && Huella::cambiado($firmante, $documento)) {
+                $this->modificado = true;
+                return;
             }
         }
     }

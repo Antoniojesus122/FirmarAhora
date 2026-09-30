@@ -12,6 +12,7 @@ use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Template\Controller;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Conexion;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Firmador;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Idioma;
 use FacturaScripts\Dinamic\Lib\FirmarAhora\Otp;
@@ -23,9 +24,12 @@ use FacturaScripts\Dinamic\Model\SolicitudFirma;
 /**
  * Página pública de firma: /FirmarAhora?t=TOKEN
  *
- * El firmante no necesita cuenta. Ve el documento, se identifica (con código por email
- * si la solicitud lo pide), acepta las condiciones y firma, o rechaza indicando el motivo.
- * Después puede descargar la copia sellada y consultar el código de verificación.
+ * El firmante no necesita cuenta. Ve el documento, se identifica, acepta las condiciones
+ * y firma, o rechaza indicando el motivo. Después puede descargar la copia sellada y
+ * consultar el código de verificación.
+ *
+ * Si la solicitud pide código por email, el documento, su pdf y la copia sellada sólo se
+ * entregan al navegador que ha verificado el código.
  */
 class FirmarAhora extends Controller
 {
@@ -58,11 +62,12 @@ class FirmarAhora extends Controller
     }
 
     /**
-     * @return bool La solicitud pide código y aún no se ha verificado.
+     * @return bool La solicitud pide código y este navegador no lo ha verificado.
      */
     public function necesitaCodigo(): bool
     {
-        return $this->solicitud->requiere_otp && false === $this->solicitud->otp_verificado;
+        return $this->solicitud->requiere_otp && false === $this->solicitud->presencial
+            && false === Otp::sesionValida($this->solicitud);
     }
 
     /**
@@ -111,11 +116,15 @@ class FirmarAhora extends Controller
 
         $this->solicitud = new SolicitudFirma();
         $token = (string)$this->request()->query('t', '');
-        if (strlen($token) < 32 || false === $this->solicitud->loadWhereEq('token', $token)
-            || null === ($this->documento = $this->solicitud->getDocumento())) {
-            $this->error = true;
-            $this->title = Tools::trans('fa-signature');
-            $this->mostrar();
+        if (strlen($token) < 32 || false === $this->solicitud->loadWhereEq('token', $token)) {
+            $this->enlaceNoValido();
+            return;
+        }
+
+        // si el documento se borró, de una firma hecha queda la copia sellada
+        $this->documento = $this->solicitud->getDocumento();
+        if (null === $this->documento && $this->solicitud->estado !== SolicitudFirma::ESTADO_FIRMADA) {
+            $this->enlaceNoValido();
             return;
         }
 
@@ -124,13 +133,24 @@ class FirmarAhora extends Controller
             $this->empresa = Empresas::get($this->documento->idempresa);
         }
 
-        $ip = $this->request()->ip();
+        $ip = Conexion::ip();
         $agente = $this->request()->userAgent();
-        $this->marcarVista($ip, $agente);
+        if ($this->request()->isMethod('POST')) {
+            $this->marcarVista($ip, $agente);
+        }
 
         $action = (string)$this->request()->inputOrQuery('action', '');
         switch ($action) {
+            case 'abierta':
+                // aviso que envía el navegador al cargar la página; no hay nada que pintar
+                $this->response()->setHttpCode(204)->setContent('')->send();
+                return;
+
             case 'pdf':
+                if ($this->necesitaCodigo() || null === $this->documento) {
+                    $this->response()->setHttpCode(403)->setContent('')->send();
+                    return;
+                }
                 $this->response()->pdf(Sellador::pdf($this->documento, false), Sellador::nombreArchivo($this->documento));
                 return;
 
@@ -162,7 +182,7 @@ class FirmarAhora extends Controller
                 break;
         }
 
-        if ($this->documento instanceof ContratoFirma) {
+        if ($this->documento instanceof ContratoFirma && false === $this->necesitaCodigo()) {
             $this->documento->reload();
             $this->html = $this->documento->renderHtml(false);
         }
@@ -190,8 +210,20 @@ class FirmarAhora extends Controller
         return false;
     }
 
+    private function enlaceNoValido(): void
+    {
+        $this->error = true;
+        $this->title = Tools::trans('fa-signature');
+        $this->mostrar();
+    }
+
     private function descargarSellado(): void
     {
+        if ($this->necesitaCodigo()) {
+            $this->response()->setHttpCode(403)->setContent('')->send();
+            return;
+        }
+
         $ruta = FS_FOLDER . '/' . $this->solicitud->sellado_path;
         if ($this->solicitud->estado !== SolicitudFirma::ESTADO_FIRMADA || empty($this->solicitud->sellado_path) || false === is_file($ruta)) {
             $this->response()->setHttpCode(404)->setContent('')->send();
@@ -250,7 +282,9 @@ class FirmarAhora extends Controller
     }
 
     /**
-     * La primera vez que se abre el enlace, la solicitud pasa a "vista".
+     * La primera vez que el firmante hace algo en la página, la solicitud pasa a "vista".
+     * No basta con pedir la página: los antivirus y los clientes de correo abren los enlaces
+     * de los mensajes para analizarlos.
      *
      * @param string $ip
      * @param string $agente

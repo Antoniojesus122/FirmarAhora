@@ -11,6 +11,7 @@ use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Where;
+use FacturaScripts\Dinamic\Lib\FirmarAhora\Ajustes;
 use FacturaScripts\Dinamic\Model\ContratoFirma;
 use FacturaScripts\Dinamic\Model\EventoFirma;
 use FacturaScripts\Dinamic\Model\User;
@@ -35,6 +36,7 @@ class SolicitudFirma extends ModelClass
     const ESTADO_PENDIENTE = 'pendiente';
     const ESTADO_RECHAZADA = 'rechazada';
     const ESTADO_VISTA = 'vista';
+    const PREFIJO_BORRADO = 'borrado-';
     const GEO_CONCEDIDA = 'concedida';
     const GEO_DENEGADA = 'denegada';
     const GEO_NO_DISPONIBLE = 'no-disponible';
@@ -96,6 +98,9 @@ class SolicitudFirma extends ModelClass
     /** @var int Precisión de la ubicación, en metros. */
     public $geo_precision;
 
+    /** @var string SHA-256 de los datos del documento al firmar, para detectar cambios posteriores. */
+    public $hash_contenido;
+
     /** @var string SHA-256 del pdf del documento tal y como lo vio el firmante. */
     public $hash_original;
 
@@ -105,8 +110,11 @@ class SolicitudFirma extends ModelClass
     /** @var int */
     public $id;
 
-    /** @var string */
+    /** @var string Dirección de la conexión desde la que se firmó. */
     public $ip;
+
+    /** @var string Dirección que declaran las cabeceras de proxy, sin verificar. */
+    public $ip_proxy;
 
     /** @var string */
     public $motivo_rechazo;
@@ -123,14 +131,26 @@ class SolicitudFirma extends ModelClass
     /** @var int Orden de los firmantes en el documento. */
     public $orden;
 
-    /** @var string */
+    /** @var string Documento sobre el que se hizo la firma, en las firmas copiadas al convertir. */
+    public $origen;
+
+    /** @var int Códigos enviados desde la última invitación. */
+    public $otp_envios;
+
+    /** @var string Caducidad del código o, una vez verificado, de la sesión del firmante. */
     public $otp_expira;
+
+    /** @var int Códigos incorrectos desde la última invitación. */
+    public $otp_fallos;
 
     /** @var string */
     public $otp_hash;
 
     /** @var int */
     public $otp_intentos;
+
+    /** @var string SHA-256 del secreto de la cookie del navegador que verificó el código. */
+    public $otp_sesion;
 
     /** @var bool */
     public $otp_verificado;
@@ -156,6 +176,33 @@ class SolicitudFirma extends ModelClass
     /** @var string */
     public $user_agent;
 
+    /** @var bool True mientras archivar() guarda, para poder cambiar el documento de una solicitud cerrada. */
+    private $archivando = false;
+
+    /**
+     * Desliga la solicitud de un documento que se va a borrar. La firma, sus evidencias y
+     * la copia sellada se conservan; el código del documento cambia para que no se mezcle
+     * con otro documento que reciba después el mismo identificador.
+     *
+     * @return bool
+     */
+    public function archivar(): bool
+    {
+        if ($this->documentoBorrado()) {
+            return true;
+        }
+
+        $this->doc_code = mb_substr(self::PREFIJO_BORRADO . mb_substr((string)$this->doc_code, 0, 12) . '-' . base_convert((string)time(), 10, 36), 0, 30);
+        $this->archivando = true;
+        $ok = $this->save();
+        $this->archivando = false;
+        if ($ok) {
+            $this->registrar('documento_borrado');
+        }
+
+        return $ok;
+    }
+
     public function clear(): void
     {
         parent::clear();
@@ -163,6 +210,8 @@ class SolicitudFirma extends ModelClass
         $this->estado = self::ESTADO_PENDIENTE;
         $this->nick = Session::user()->nick ?? null;
         $this->orden = 1;
+        $this->otp_envios = 0;
+        $this->otp_fallos = 0;
         $this->otp_intentos = 0;
         $this->otp_verificado = false;
         $this->presencial = false;
@@ -204,6 +253,16 @@ class SolicitudFirma extends ModelClass
     {
         $where = [Where::eq('doc_model', $docModel), Where::eq('doc_code', $docCode)];
         return static::all($where, ['orden' => 'ASC', 'id' => 'ASC']);
+    }
+
+    /**
+     * El documento de la solicitud se borró del ERP después de firmarse.
+     *
+     * @return bool
+     */
+    public function documentoBorrado(): bool
+    {
+        return 0 === strpos((string)$this->doc_code, self::PREFIJO_BORRADO);
     }
 
     /**
@@ -249,7 +308,7 @@ class SolicitudFirma extends ModelClass
     public function getDocumento()
     {
         $allowed = array_merge(Init::DOCUMENTOS, ['ContratoFirma']);
-        if (false === in_array($this->doc_model, $allowed, true)) {
+        if ($this->documentoBorrado() || false === in_array($this->doc_model, $allowed, true)) {
             return null;
         }
 
@@ -349,7 +408,8 @@ class SolicitudFirma extends ModelClass
 
         // una solicitud cerrada (firmada, rechazada, anulada, caducada) no cambia sus datos:
         // el estado y las evidencias sólo los modifican Firmador, Otp y Correo
-        if ($this->exists() && false === in_array($this->getOriginal('estado'), [self::ESTADO_PENDIENTE, self::ESTADO_VISTA], true)) {
+        if ($this->exists() && false === $this->archivando
+            && false === in_array($this->getOriginal('estado'), [self::ESTADO_PENDIENTE, self::ESTADO_VISTA], true)) {
             foreach (['rol', 'nombre', 'email', 'nif', 'caduca', 'doc_model', 'doc_code', 'token', 'codigo'] as $field) {
                 if ($this->hasChanged($field)) {
                     Tools::log()->warning('fa-request-closed');
@@ -405,7 +465,7 @@ class SolicitudFirma extends ModelClass
      */
     public function urlFirma(): string
     {
-        return Tools::siteUrl() . '/FirmarAhora?t=' . $this->token;
+        return Ajustes::urlBase() . '/FirmarAhora?t=' . $this->token;
     }
 
     /**
@@ -431,7 +491,7 @@ class SolicitudFirma extends ModelClass
      */
     public function urlVerificacion(): string
     {
-        return Tools::siteUrl() . '/VerificarFirma?c=' . $this->codigo;
+        return Ajustes::urlBase() . '/VerificarFirma?c=' . $this->codigo;
     }
 
     public function url(string $type = 'auto', string $list = 'List'): string

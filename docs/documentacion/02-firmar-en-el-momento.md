@@ -19,7 +19,9 @@ Un mismo documento puede llevar varias firmas. Por ejemplo, en un albarán de en
 
 ## Al imprimir
 
-Cuando imprimes el documento, las firmas salen al pie de la página, a la derecha, con el nombre, el DNI, la fecha y un código de verificación. Si prefieres que no salgan, desactívalo en los ajustes del plugin.
+En el menú **Imprimir** del documento tienes una opción nueva, «PDF con firmas», y el mismo botón en la pestaña **Firmas**. En ese PDF las firmas salen al pie de la página, a la derecha, con el nombre, el DNI, la fecha y un código de verificación.
+
+El PDF normal de FacturaScripts no cambia. Así, si usas otro plugin para el diseño de tus documentos, sigue funcionando igual.
 
 **Consejo:** si firmas con una tablet, abre FacturaScripts en su navegador y déjale la tablet al cliente solo en el momento de firmar.
 

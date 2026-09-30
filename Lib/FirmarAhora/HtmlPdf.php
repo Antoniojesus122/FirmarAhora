@@ -99,9 +99,17 @@ class HtmlPdf
 
     private function imagen(DOMElement $img): void
     {
-        $src = $img->getAttribute('src');
-        $ext = strtolower(pathinfo(parse_url($src, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION));
-        if (false === file_exists($src) || false === in_array($ext, ['png', 'jpg', 'jpeg'], true)) {
+        // sólo las imágenes que ha puesto el plugin, y sólo de la carpeta de archivos: el
+        // texto del contrato lo escribe un usuario y no debe poder leer rutas del servidor
+        $src = realpath($img->getAttribute('src'));
+        $raiz = realpath(FS_FOLDER . '/MyFiles');
+        if ($img->getAttribute('data-fa-img') !== '1' || false === $src || false === $raiz
+            || 0 !== strpos($src, $raiz . DIRECTORY_SEPARATOR)) {
+            return;
+        }
+
+        $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
+        if (false === in_array($ext, ['png', 'jpg', 'jpeg'], true)) {
             return;
         }
 

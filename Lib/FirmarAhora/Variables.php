@@ -21,6 +21,13 @@ use FacturaScripts\Dinamic\Model\SolicitudFirma;
  */
 class Variables
 {
+    /**
+     * @var string Atributo de las imágenes que inserta el plugin (logo y firma de la empresa).
+     * El html del usuario se limpia antes y no puede traerlo, así que en el pdf sólo se
+     * cargan del disco las imágenes que lo llevan.
+     */
+    const MARCA_IMAGEN = 'data-fa-img="1"';
+
     /** @var string Marca que deja {{firmas}} en el html del pdf. */
     const MARCA_FIRMAS = '<div data-fa-firmas="1"></div>';
 
@@ -75,7 +82,7 @@ class Variables
 
         $firmaEmpresa = PlantillaFirma::imagen($contrato->getPlantilla()->idfirmaempresa);
         $pares['{{firma_empresa}}'] = $firmaEmpresa ?
-            '<img src="' . self::srcImagen($firmaEmpresa->path, $paraPdf) . '" alt="" style="max-height:90px;max-width:220px;">' :
+            '<img ' . self::MARCA_IMAGEN . ' src="' . self::srcImagen($firmaEmpresa->path, $paraPdf) . '" alt="" style="max-height:90px;max-width:220px;">' :
             '';
 
         $pares['{{firmas}}'] = $paraPdf ? self::MARCA_FIRMAS : self::bloqueFirmasHtml($contrato->getSolicitudes());

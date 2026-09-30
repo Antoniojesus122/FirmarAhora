@@ -9,6 +9,7 @@
 				<span><span class="text-muted">{{ trans('fa-verification-code') }}:</span> <b class="fa-codigo">{{ sol.codigo }}</b></span>
 				{% if sol.requiere_otp %}<span class="badge bg-info">{{ trans('fa-otp') }}</span>{% endif %}
 				{% if sol.presencial %}<span class="badge bg-secondary">{{ trans('fa-method-in-person') }}</span>{% endif %}
+				{% if sol.documentoBorrado() %}<span class="badge bg-dark">{{ trans('fa-doc-deleted') }}</span>{% endif %}
 			</div>
 			{% if sol.estado == 'firmada' %}
 				<div class="row g-3">
@@ -24,6 +25,12 @@
 							<tr><th>{{ trans('fa-signature-type') }}</th><td>{{ trans('fa-kind-' ~ sol.firma_tipo) }}</td></tr>
 							<tr><th>{{ trans('fa-otp-verified') }}</th><td>{{ sol.otp_verificado ? trans('yes') : trans('no') }}</td></tr>
 							<tr><th>IP</th><td>{{ sol.ip }}</td></tr>
+							{% if sol.ip_proxy %}
+								<tr><th>{{ trans('fa-ip-proxy') }}</th><td class="small">{{ sol.ip_proxy }}</td></tr>
+							{% endif %}
+							{% if sol.origen %}
+								<tr><th>{{ trans('fa-signed-document') }}</th><td>{{ sol.origen }}</td></tr>
+							{% endif %}
 							<tr><th>{{ trans('fa-browser') }}</th><td class="small text-break">{{ sol.user_agent }}</td></tr>
 							{% if sol.ubicacion() %}
 								<tr>
